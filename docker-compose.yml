@@ -3,34 +3,47 @@ version: '3.8'
 services:
 backend:
 build: ./backend
+container_name: employee-portal-backend
 ports:
 - "3337:3337"
-volumes:
-- ./backend:/app
+environment:
+- DB_USER=DB 
+U
+​
+ SER−DB 
+P
+​
+ ASSWORD={DB_PASSWORD}
+- DB_NAME=${DB_NAME}
+- DB_HOST=db
 depends_on:
 - db
-env_file:
-- .env
-container_name: employee-portal-backend
+restart: unless-stopped
 
 frontend:
 build: ./frontend
+container_name: employee-portal-frontend
 ports:
 - "3338:3338"
 depends_on:
 - backend
-container_name: employee-portal-frontend
+restart: unless-stopped
 
 db:
 image: postgres:14-alpine
-restart: always
-environment:
-POSTGRES_USER: ${DB_USER:-portaluser}
-POSTGRES_PASSWORD: ${DB_PASSWORD:-secretpassword}
-POSTGRES_DB: ${DB_NAME:-employeeportal}
-volumes:
-- portal_db_data:/var/lib/postgresql/data
 container_name: employee-portal-db
+environment:
+- POSTGRES_USER=DB 
+U
+​
+ SER−POSTGRES 
+P
+​
+ ASSWORD={DB_PASSWORD}
+- POSTGRES_DB=${DB_NAME}
+volumes:
+- portal-db-data:/var/lib/postgresql/data
+restart: unless-stopped
 
 volumes:
-portal_db_data:
+portal-db-data:
