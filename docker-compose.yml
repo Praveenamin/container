@@ -1,34 +1,39 @@
 version: '3.8'
-services:
-backend:
-build: ./backend
-container_name: employee-portal-backend
-ports:
-- "3337:3337"
-environment:
-- DB_USER=DBU​SER−DBP​ASSWORD={DB_PASSWORD}
-- DB_NAME=${DB_NAME}
-- DB_HOST=db
-depends_on:
-- db
-restart: unless-stopped
-frontend:
-build: ./frontend
-container_name: employee-portal-frontend
-ports:
-- "3338:3338"
-depends_on:
-- backend
-restart: unless-stopped
-db:
-image: postgres:14-alpine
-container_name: employee-portal-db
-environment:
-- POSTGRES_USER=DBU​SER−POSTGRESP​ASSWORD={DB_PASSWORD}
-- POSTGRES_DB=${DB_NAME}
-volumes:
-- portal-db-data:/var/lib/postgresql/data
-restart: unless-stopped
-volumes:
-portal-db-data:
 
+services:
+  backend:
+    build: ./backend
+    container_name: employee-portal-backend
+    ports:
+      - "3337:3337"
+    environment:
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_HOST=db
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: employee-portal-frontend
+    ports:
+      - "3338:3338"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  db:
+    image: postgres:14-alpine
+    container_name: employee-portal-db
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - portal-db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  portal-db-data:
