@@ -1,28 +1,29 @@
-name: Deploy to Ubuntu Server
+name: Deploy to Server
 
 on:
   push:
     branches:
-      - main # Trigger on pushes to the main branch
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Deploy to Server
-        uses: appleboy/ssh-action@v0.1.4
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd /home/container/container
-            git pull origin main
-            docker-compose down
-            docker-compose up --build -d
-            docker system prune -f
+    - name: Deploy to Server
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 4321
+        script: |
+          cd /home/container/container
+          git pull origin main
+          docker-compose down --rmi all
+          docker-compose up --build -d
+          docker system prune -f
 
