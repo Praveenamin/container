@@ -19,7 +19,7 @@ services:
     build: ./frontend
     container_name: employee-portal-frontend
     ports:
-      - "3338:3338"
+      - "3338:80"
     depends_on:
       - backend
     restart: unless-stopped
@@ -37,3 +37,4 @@ services:
 
 volumes:
   portal-db-data:
+
