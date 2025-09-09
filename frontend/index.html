@@ -171,6 +171,17 @@
     </div>
 </div>
 
+<!-- Custom Modal for Alerts and Confirmations -->
+<div id="custom-modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); justify-content: center; align-items: center;">
+    <div style="background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); text-align: center;">
+        <p id="modal-message" style="margin-bottom: 20px;"></p>
+        <div id="modal-buttons">
+            <button id="modal-ok" style="background-color: #1e40af; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">OK</button>
+            <button id="modal-cancel" style="background-color: #ccc; color: #333; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; display: none;">Cancel</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const API_URL = 'http://backend:3337/api';
     const authContainer = document.getElementById('auth-container');
@@ -183,6 +194,42 @@
 
     let currentAuthToken = null;
     let currentUser = null;
+    
+    // --- Custom Modal Functions ---
+    const customModal = document.getElementById('custom-modal');
+    const modalMessage = document.getElementById('modal-message');
+    const modalOkBtn = document.getElementById('modal-ok');
+    const modalCancelBtn = document.getElementById('modal-cancel');
+
+    function showAlert(message) {
+        modalMessage.textContent = message;
+        modalCancelBtn.style.display = 'none';
+        modalOkBtn.style.display = 'inline-block';
+        modalOkBtn.onclick = () => {
+            customModal.style.display = 'none';
+        };
+        customModal.style.display = 'flex';
+    }
+
+    function showConfirm(message, callback) {
+        modalMessage.textContent = message;
+        modalCancelBtn.style.display = 'inline-block';
+        modalOkBtn.style.display = 'inline-block';
+        modalOkBtn.onclick = () => {
+            customModal.style.display = 'none';
+            if (callback) callback(true);
+        };
+        modalCancelBtn.onclick = () => {
+            customModal.style.display = 'none';
+            if (callback) callback(false);
+        };
+        customModal.style.display = 'flex';
+    }
+    
+    // Helper function to escape HTML special characters for safe `onclick` attributes
+    function escapeHtml(str) {
+        return str ? str.replace(/'/g, '&apos;').replace(/"/g, '&quot;') : '';
+    }
 
     // Helper function to fetch data
     async function fetchData(endpoint, method = 'GET', data = null) {
@@ -216,7 +263,7 @@
             currentUser = { is_admin: true, id: 1 };
             renderAdminDashboard();
         } else {
-            alert('Invalid credentials. This demo only works with admin credentials.');
+            showAlert('Invalid credentials. This demo only works with admin credentials.');
         }
     });
 
@@ -249,14 +296,14 @@
             users.forEach(user => {
                 const row = usersTableBody.insertRow();
                 row.innerHTML = `
-                    <td>${user.first_name}</td>
-                    <td>${user.last_name}</td>
-                    <td>${user.email}</td>
-                    <td>${user.emp_id}</td>
-                    <td>${user.designation}</td>
+                    <td>${escapeHtml(user.first_name)}</td>
+                    <td>${escapeHtml(user.last_name)}</td>
+                    <td>${escapeHtml(user.email)}</td>
+                    <td>${escapeHtml(user.emp_id)}</td>
+                    <td>${escapeHtml(user.designation)}</td>
                     <td>${user.is_admin ? 'Yes' : 'No'}</td>
                     <td class="action-buttons">
-                        <button class="edit-btn" onclick="editUser(${user.id}, '${user.first_name}', '${user.last_name}', '${user.email}', '${user.emp_id}', '${user.designation}', ${user.is_admin})">Edit</button>
+                        <button class="edit-btn" onclick="editUser(${user.id}, '${escapeHtml(user.first_name)}', '${escapeHtml(user.last_name)}', '${escapeHtml(user.email)}', '${escapeHtml(user.emp_id)}', '${escapeHtml(user.designation)}', '${user.is_admin}')">Edit</button>
                         <button class="delete-btn" onclick="deleteUser(${user.id})">Delete</button>
                     </td>
                 `;
@@ -276,17 +323,17 @@
             assets.forEach(asset => {
                 const row = assetsTableBody.insertRow();
                 row.innerHTML = `
-                    <td>${asset.first_name ? `${asset.first_name} ${asset.last_name} (${asset.emp_id})` : 'Unassigned'}</td>
-                    <td>${asset.type}</td>
-                    <td>${asset.model}</td>
-                    <td>${asset.serial_number}</td>
-                    <td>${asset.monitor || '-'}</td>
-                    <td>${asset.keyboard || '-'}</td>
-                    <td>${asset.mouse || '-'}</td>
-                    <td>${asset.wifi_lan_ip || '-'}</td>
-                    <td>${asset.comments || '-'}</td>
+                    <td>${asset.first_name ? `${escapeHtml(asset.first_name)} ${escapeHtml(asset.last_name)} (${escapeHtml(asset.emp_id)})` : 'Unassigned'}</td>
+                    <td>${escapeHtml(asset.type)}</td>
+                    <td>${escapeHtml(asset.model)}</td>
+                    <td>${escapeHtml(asset.serial_number)}</td>
+                    <td>${escapeHtml(asset.monitor || '-')}</td>
+                    <td>${escapeHtml(asset.keyboard || '-')}</td>
+                    <td>${escapeHtml(asset.mouse || '-')}</td>
+                    <td>${escapeHtml(asset.wifi_lan_ip || '-')}</td>
+                    <td>${escapeHtml(asset.comments || '-')}</td>
                     <td class="action-buttons">
-                        <button class="edit-btn" onclick="editAsset(${asset.id}, ${asset.user_id}, '${asset.type}', '${asset.model}', '${asset.serial_number}', '${asset.monitor}', '${asset.keyboard}', '${asset.mouse}', '${asset.wifi_lan_ip}', '${asset.comments}')">Edit</button>
+                        <button class="edit-btn" onclick="editAsset(${asset.id}, ${asset.user_id}, '${escapeHtml(asset.type)}', '${escapeHtml(asset.model)}', '${escapeHtml(asset.serial_number)}', '${escapeHtml(asset.monitor)}', '${escapeHtml(asset.keyboard)}', '${escapeHtml(asset.mouse)}', '${escapeHtml(asset.wifi_lan_ip)}', '${escapeHtml(asset.comments)}')">Edit</button>
                         <button class="delete-btn" onclick="deleteAsset(${asset.id})">Delete</button>
                     </td>
                 `;
@@ -343,9 +390,18 @@
             showForm('user-form-container', false);
         }
     }
-
-    function editUser(id, first_name, last_name, email, emp_id, designation, is_admin) {
-        showUserForm({ id, first_name, last_name, email, emp_id, designation, is_admin });
+    
+    // Correctly handle the boolean value from the onclick attribute
+    function editUser(id, first_name, last_name, email, emp_id, designation, isAdmin) {
+        showUserForm({ 
+            id, 
+            first_name, 
+            last_name, 
+            email, 
+            emp_id, 
+            designation, 
+            is_admin: isAdmin === 'true' 
+        });
     }
 
     function showAssetForm(asset = null) {
@@ -393,19 +449,21 @@
             hideForm('user-form-container');
             await fetchUsers();
         } catch (error) {
-            alert('Error saving user: ' + error.message);
+            showAlert('Error saving user: ' + error.message);
         }
     });
 
     async function deleteUser(id) {
-        if (confirm('Are you sure you want to delete this user?')) {
-            try {
-                await fetchData(`/users/${id}`, 'DELETE');
-                await fetchUsers();
-            } catch (error) {
-                alert('Error deleting user: ' + error.message);
+        showConfirm('Are you sure you want to delete this user?', async (confirmed) => {
+            if (confirmed) {
+                try {
+                    await fetchData(`/users/${id}`, 'DELETE');
+                    await fetchUsers();
+                } catch (error) {
+                    showAlert('Error deleting user: ' + error.message);
+                }
             }
-        }
+        });
     }
 
     document.getElementById('asset-form').addEventListener('submit', async (e) => {
@@ -431,19 +489,21 @@
             hideForm('asset-form-container');
             await fetchAssets();
         } catch (error) {
-            alert('Error saving asset: ' + error.message);
+            showAlert('Error saving asset: ' + error.message);
         }
     });
 
     async function deleteAsset(id) {
-        if (confirm('Are you sure you want to delete this asset?')) {
-            try {
-                await fetchData(`/assets/${id}`, 'DELETE');
-                await fetchAssets();
-            } catch (error) {
-                alert('Error deleting asset: ' + error.message);
+        showConfirm('Are you sure you want to delete this asset?', async (confirmed) => {
+            if (confirmed) {
+                try {
+                    await fetchData(`/assets/${id}`, 'DELETE');
+                    await fetchAssets();
+                } catch (error) {
+                    showAlert('Error deleting asset: ' + error.message);
+                }
             }
-        }
+        });
     }
 </script>
 </body>
