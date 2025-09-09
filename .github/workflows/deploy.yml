@@ -20,7 +20,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /home/container/employee-portal
+            cd /home/container/container
             git pull origin main
             docker-compose down
             docker-compose up --build -d
