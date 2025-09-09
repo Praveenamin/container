@@ -13,7 +13,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Deploy to Server
+    - name: Test SSH Connection
       uses: appleboy/ssh-action@v0.1.7
       with:
         host: ${{ secrets.SSH_HOST }}
@@ -21,9 +21,6 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 4321
         script: |
-          cd /home/container/container
-          git pull origin main
-          docker-compose down --rmi all
-          docker-compose up --build -d
-          docker system prune -f
-
+          echo "Successfully connected to server. Running test command."
+          ls -l /home/container
+          echo "SSH connection test complete."
