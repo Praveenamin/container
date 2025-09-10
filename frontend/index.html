@@ -4,592 +4,389 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Employee Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://kit.fontawesome.com/43f3366835.js" crossorigin="anonymous"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; margin: 0; padding: 20px; background-color: #f4f7f9; color: #333; }
-        .container { max-width: 1200px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .header h1 { margin: 0; color: #1e40af; }
-        .auth-container { display: flex; justify-content: center; align-items: center; height: 80vh; }
-        .login-form { width: 300px; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); background: #f9fafb; }
-        .login-form h2 { text-align: center; color: #1e40af; }
-        .login-form input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
-        .login-form button { width: 100%; padding: 10px; background-color: #1e40af; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        .login-form button:hover { background-color: #1d4ed8; }
-        .dashboard-content { display: none; }
-        .tabs { display: flex; margin-bottom: 20px; }
-        .tab-button { padding: 10px 20px; cursor: pointer; border: 1px solid #ccc; border-bottom: none; border-radius: 8px 8px 0 0; background-color: #eee; }
-        .tab-button.active { background-color: #fff; border-top: 2px solid #1e40af; border-left: 2px solid #1e40af; border-right: 2px solid #1e40af; }
-        .table-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #1e40af; color: white; }
-        tr:nth-child(even) { background-color: #f9fafb; }
-        .action-buttons button { padding: 5px 10px; margin-right: 5px; border: none; border-radius: 5px; cursor: pointer; }
-        .edit-btn { background-color: #f97316; color: white; }
-        .delete-btn { background-color: #ef4444; color: white; }
-        .add-btn { background-color: #22c55e; color: white; padding: 8px 15px; border-radius: 5px; }
-        .form-container { display: none; margin-top: 20px; padding: 20px; border: 1px solid #ccc; border-radius: 8px; background: #f9fafb; }
-        .form-container.active { display: block; }
-        .form-container input, .form-container select { width: calc(100% - 22px); padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; }
-        .form-buttons { display: flex; justify-content: flex-end; }
-        .form-buttons button { margin-left: 10px; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
-        .user-info { display: flex; flex-direction: column; align-items: center; text-align: center; }
-        .user-info h2 { color: #1e40af; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
     </style>
 </head>
-<body>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
 
-<div class="auth-container" id="auth-container">
-    <div class="login-form">
-        <h2>Employee Portal Login</h2>
-        <form id="login-form">
-            <input type="email" id="email" placeholder="Email" required>
-            <input type="password" id="password" placeholder="Password" required>
-            <button type="submit">Login</button>
-        </form>
-    </div>
-</div>
+    <div id="app" class="w-full max-w-4xl bg-white rounded-xl shadow-lg p-6 md:p-8 space-y-6">
 
-<div class="container dashboard-content" id="dashboard-container">
-    <div class="header">
-        <h1 id="portal-title">Employee Portal</h1>
-        <button id="logout-btn">Logout</button>
-    </div>
-
-    <!-- Admin Dashboard -->
-    <div id="admin-dashboard" style="display: none;">
-        <div class="tabs">
-            <button class="tab-button active" onclick="showTab('users-tab', this)">User Management</button>
-            <button class="tab-button" onclick="showTab('assets-tab', this)">IT Asset List</button>
+        <!-- Login View -->
+        <div id="login-view" class="text-center transition-all duration-300 transform scale-100 opacity-100">
+            <h1 class="text-4xl font-bold text-gray-800 mb-6">Employee Portal</h1>
+            <form id="login-form" class="space-y-4">
+                <input type="email" id="email" placeholder="Email" required class="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors">
+                <input type="password" id="password" placeholder="Password" required class="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors">
+                <button type="submit" class="w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors">Login</button>
+            </form>
+            <p id="error-message" class="text-sm text-red-500 mt-4 h-5"></p>
         </div>
 
-        <div id="users-tab" class="tab-content">
-            <button class="add-btn" onclick="showUserForm()">Add User</button>
-            <div id="user-form-container" class="form-container">
-                <form id="user-form">
+        <!-- Dashboard View -->
+        <div id="dashboard-view" class="hidden transition-all duration-300 transform scale-95 opacity-0 space-y-6">
+            <div class="flex flex-col md:flex-row justify-between items-center pb-4 border-b border-gray-200">
+                <h2 class="text-3xl font-bold text-gray-800">Dashboard</h2>
+                <button id="logout-button" class="mt-4 md:mt-0 py-2 px-4 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors">Logout</button>
+            </div>
+
+            <!-- User Info and Assets -->
+            <div id="user-info" class="bg-gray-50 rounded-lg p-6 shadow-sm">
+                <h3 class="text-xl font-semibold text-gray-700 mb-4">My Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                    <p><strong>Name:</strong> <span id="user-name"></span></p>
+                    <p><strong>Email:</strong> <span id="user-email"></span></p>
+                    <p><strong>Employee ID:</strong> <span id="user-emp-id"></span></p>
+                    <p><strong>Designation:</strong> <span id="user-designation"></span></p>
+                </div>
+                <div class="mt-6">
+                    <h4 class="text-lg font-semibold text-gray-700 mb-2">My Assets</h4>
+                    <ul id="user-assets" class="list-disc list-inside space-y-1 text-sm text-gray-600"></ul>
+                </div>
+            </div>
+
+            <!-- Admin Panel -->
+            <div id="admin-panel" class="hidden space-y-6">
+                <div class="bg-white rounded-lg p-6 shadow-lg border border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Admin Panel</h3>
+                    <div class="flex justify-end mb-4">
+                        <button id="show-add-user-form" class="py-2 px-4 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Add User
+                        </button>
+                    </div>
+
+                    <!-- User Table -->
+                    <div class="overflow-x-auto rounded-lg">
+                        <table class="min-w-full bg-white border border-gray-200">
+                            <thead class="bg-gray-100">
+                                <tr class="text-left text-sm font-semibold text-gray-600">
+                                    <th class="py-3 px-4">Name</th>
+                                    <th class="py-3 px-4">Email</th>
+                                    <th class="py-3 px-4">Role</th>
+                                    <th class="py-3 px-4 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body" class="divide-y divide-gray-200">
+                                <!-- User rows will be dynamically inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modals -->
+        <div id="modal-backdrop" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-40 hidden"></div>
+
+        <!-- Add/Edit User Modal -->
+        <div id="user-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden transition-all duration-300 scale-95 opacity-0">
+            <div class="bg-white rounded-lg shadow-xl p-6 md:p-8 w-full max-w-lg space-y-6">
+                <h3 id="modal-title" class="text-2xl font-bold text-gray-800 mb-4">Add User</h3>
+                <form id="user-form" class="space-y-4">
                     <input type="hidden" id="user-id">
-                    <input type="text" id="user-first-name" placeholder="First Name" required>
-                    <input type="text" id="user-last-name" placeholder="Last Name" required>
-                    <input type="email" id="user-email" placeholder="Email" required>
-                    <input type="password" id="user-password" placeholder="Password" required>
-                    <input type="text" id="user-emp-id" placeholder="Employee ID" required>
-                    <input type="text" id="user-designation" placeholder="Designation" required>
-                    <label>
-                        <input type="checkbox" id="user-is-admin"> Is Admin
-                    </label>
-                    <div class="form-buttons">
-                        <button type="button" onclick="hideForm('user-form-container')">Cancel</button>
-                        <button type="submit">Save User</button>
+                    <input type="text" id="form-first-name" placeholder="First Name" required class="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors">
+                    <input type="text" id="form-last-name" placeholder="Last Name" required class="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors">
+                    <input type="text" id="form-emp-id" placeholder="Employee ID" required class="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors">
+                    <input type="text" id="form-designation" placeholder="Designation" required class="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors">
+                    <input type="email" id="form-email" placeholder="Email" required class="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors">
+                    <input type="password" id="form-password" placeholder="Password" class="w-full px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:outline-none transition-colors">
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" id="form-admin" class="form-checkbox text-indigo-600 rounded-md">
+                        <label for="form-admin" class="text-gray-700">Admin User</label>
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" id="cancel-user-modal" class="py-2 px-4 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors">Cancel</button>
+                        <button type="submit" id="save-user-button" class="py-2 px-4 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors">Save User</button>
                     </div>
                 </form>
             </div>
-            <div class="table-container">
-                <table id="users-table">
-                    <thead>
-                        <tr>
-                            <th>First Name</th>
-                            <th>Last Name</th>
-                            <th>Email</th>
-                            <th>Emp ID</th>
-                            <th>Designation</th>
-                            <th>Admin</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
         </div>
 
-        <div id="assets-tab" class="tab-content" style="display:none;">
-            <button class="add-btn" onclick="showAssetForm()">Add IT Asset</button>
-            <div id="asset-form-container" class="form-container">
-                <form id="asset-form">
-                    <input type="hidden" id="asset-id">
-                    <select id="asset-user-id">
-                        <!-- User options will be populated here -->
-                    </select>
-                    <input type="text" id="asset-type" placeholder="Type (Laptop/Desktop)" required>
-                    <input type="text" id="asset-model" placeholder="Model" required>
-                    <input type="text" id="asset-serial-number" placeholder="Serial Number" required>
-                    <input type="text" id="asset-monitor" placeholder="Monitor">
-                    <input type="text" id="asset-keyboard" placeholder="Keyboard">
-                    <input type="text" id="asset-mouse" placeholder="Mouse">
-                    <input type="text" id="asset-wifi-lan-ip" placeholder="IP Address">
-                    <textarea id="asset-comments" placeholder="Comments"></textarea>
-                    <div class="form-buttons">
-                        <button type="button" onclick="hideForm('asset-form-container')">Cancel</button>
-                        <button type="submit">Save Asset</button>
-                    </div>
-                </form>
-            </div>
-            <div class="table-container">
-                <table id="assets-table">
-                    <thead>
-                        <tr>
-                            <th>Assigned User</th>
-                            <th>Type</th>
-                            <th>Model</th>
-                            <th>Serial Number</th>
-                            <th>Monitor</th>
-                            <th>Keyboard</th>
-                            <th>Mouse</th>
-                            <th>IP Address</th>
-                            <th>Comments</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
+        <!-- Message Box -->
+        <div id="message-box" class="fixed top-4 right-4 bg-indigo-600 text-white px-6 py-3 rounded-lg shadow-xl hidden transition-all duration-300 transform translate-x-full">
+            <span id="message-text"></span>
         </div>
     </div>
 
-    <!-- User Dashboard -->
-    <div id="user-dashboard" style="display: none;">
-        <div class="user-info">
-            <h2>Your Profile</h2>
-            <div id="user-profile-info"></div>
-        </div>
-        <h3>Your IT Assets</h3>
-        <div class="table-container">
-            <table id="user-assets-table">
-                <thead>
-                    <tr>
-                        <th>Type</th>
-                        <th>Model</th>
-                        <th>Serial Number</th>
-                        <th>Monitor</th>
-                        <th>Keyboard</th>
-                        <th>Mouse</th>
-                        <th>IP Address</th>
-                        <th>Comments</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
-</div>
+    <script>
+        const API_URL = 'http://localhost:3337/api';
 
-<!-- Custom Modal for Alerts and Confirmations -->
-<div id="custom-modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); justify-content: center; align-items: center;">
-    <div style="background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); text-align: center;">
-        <p id="modal-message" style="margin-bottom: 20px;"></p>
-        <div id="modal-buttons">
-            <button id="modal-ok" style="background-color: #1e40af; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">OK</button>
-            <button id="modal-cancel" style="background-color: #ccc; color: #333; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; display: none;">Cancel</button>
-        </div>
-    </div>
-</div>
+        const app = document.getElementById('app');
+        const loginView = document.getElementById('login-view');
+        const dashboardView = document.getElementById('dashboard-view');
+        const loginForm = document.getElementById('login-form');
+        const errorMessage = document.getElementById('error-message');
+        const logoutButton = document.getElementById('logout-button');
+        const userInfo = document.getElementById('user-info');
+        const adminPanel = document.getElementById('admin-panel');
+        const usersTableBody = document.getElementById('users-table-body');
+        const showAddUserFormButton = document.getElementById('show-add-user-form');
+        const userModal = document.getElementById('user-modal');
+        const userForm = document.getElementById('user-form');
+        const modalBackdrop = document.getElementById('modal-backdrop');
+        const modalTitle = document.getElementById('modal-title');
+        const cancelButton = document.getElementById('cancel-user-modal');
+        const messageBox = document.getElementById('message-box');
+        const messageText = document.getElementById('message-text');
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    // Corrected API URL to point to the new backend server
-    const API_URL = `http://${window.location.hostname}:3337/api`;
-    const authContainer = document.getElementById('auth-container');
-    const dashboardContainer = document.getElementById('dashboard-container');
-    const loginForm = document.getElementById('login-form');
-    const logoutBtn = document.getElementById('logout-btn');
-    const adminDashboard = document.getElementById('admin-dashboard');
-    const userDashboard = document.getElementById('user-dashboard');
-    const portalTitle = document.getElementById('portal-title');
+        let currentUser = null;
 
-    let currentAuthToken = null;
-    let currentUser = null;
-    
-    // --- Custom Modal Functions ---
-    const customModal = document.getElementById('custom-modal');
-    const modalMessage = document.getElementById('modal-message');
-    const modalOkBtn = document.getElementById('modal-ok');
-    const modalCancelBtn = document.getElementById('modal-cancel');
-
-    function showAlert(message) {
-        modalMessage.textContent = message;
-        modalCancelBtn.style.display = 'none';
-        modalOkBtn.style.display = 'inline-block';
-        modalOkBtn.onclick = () => {
-            customModal.style.display = 'none';
-        };
-        customModal.style.display = 'flex';
-    }
-
-    function showConfirm(message, callback) {
-        modalMessage.textContent = message;
-        modalCancelBtn.style.display = 'inline-block';
-        modalOkBtn.style.display = 'inline-block';
-        modalOkBtn.onclick = () => {
-            customModal.style.display = 'none';
-            if (callback) callback(true);
-        };
-        modalCancelBtn.onclick = () => {
-            customModal.style.display = 'none';
-            if (callback) callback(false);
-        };
-        customModal.style.display = 'flex';
-    }
-    
-    // Helper function to escape HTML special characters for safe `onclick` attributes
-    function escapeHtml(str) {
-        return str ? str.replace(/'/g, '&apos;').replace(/"/g, '&quot;') : '';
-    }
-
-    // Helper function to fetch data
-    async function fetchData(endpoint, method = 'GET', data = null) {
-        const headers = { 'Content-Type': 'application/json' };
-        if (currentAuthToken) {
-            headers['Authorization'] = `Bearer ${currentAuthToken}`;
+        // Utility functions
+        function showMessage(message, type = 'success') {
+            messageText.textContent = message;
+            messageBox.style.display = 'block';
+            messageBox.style.transform = 'translateX(0)';
+            messageBox.style.backgroundColor = type === 'success' ? '#4f46e5' : '#ef4444';
+            setTimeout(() => {
+                messageBox.style.transform = 'translateX(150%)';
+            }, 3000);
         }
 
-        const options = { method, headers };
-        if (data) {
-            options.body = JSON.stringify(data);
-        }
-
-        const response = await fetch(`${API_URL}${endpoint}`, options);
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || response.statusText);
-        }
-        return await response.json();
-    }
-
-    // Function to handle login
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-
-        try {
-            const response = await fetchData('/login', 'POST', { email, password });
-            currentAuthToken = response.token;
-            currentUser = response.user;
-
-            if (currentUser.is_admin) {
-                renderAdminDashboard();
-            } else {
-                renderUserDashboard();
+        function showView(viewId) {
+            const views = [loginView, dashboardView];
+            views.forEach(view => {
+                view.classList.add('hidden', 'scale-95', 'opacity-0');
+            });
+            const viewToShow = document.getElementById(viewId);
+            if (viewToShow) {
+                viewToShow.classList.remove('hidden', 'scale-95', 'opacity-0');
+                viewToShow.classList.add('scale-100', 'opacity-100');
             }
-        } catch (error) {
-            showAlert('Login failed: ' + error.message);
         }
-    });
 
-    logoutBtn.addEventListener('click', () => {
-        currentAuthToken = null;
-        currentUser = null;
-        authContainer.style.display = 'flex';
-        dashboardContainer.style.display = 'none';
-        adminDashboard.style.display = 'none';
-        userDashboard.style.display = 'none';
-        document.getElementById('login-form').reset();
-    });
+        function toggleModal(show) {
+            if (show) {
+                userModal.classList.remove('hidden', 'scale-95', 'opacity-0');
+                userModal.classList.add('flex', 'scale-100', 'opacity-100');
+                modalBackdrop.classList.remove('hidden');
+            } else {
+                userModal.classList.add('hidden', 'scale-95', 'opacity-0');
+                userModal.classList.remove('flex', 'scale-100', 'opacity-100');
+                modalBackdrop.classList.add('hidden');
+                userForm.reset();
+            }
+        }
 
-    // Admin functions
-    async function renderAdminDashboard() {
-        authContainer.style.display = 'none';
-        dashboardContainer.style.display = 'block';
-        adminDashboard.style.display = 'block';
-        userDashboard.style.display = 'none';
-        portalTitle.textContent = 'Admin Portal';
-        await fetchUsers();
-        await fetchAssets();
-    }
+        // API Calls
+        async function login(email, password) {
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    currentUser = data;
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    updateUI();
+                    showView('dashboard-view');
+                } else {
+                    errorMessage.textContent = data.message;
+                }
+            } catch (error) {
+                console.error('Login failed:', error);
+                errorMessage.textContent = 'Login failed: Failed to fetch.';
+            }
+        }
 
-    async function fetchUsers() {
-        const usersTableBody = document.querySelector('#users-table tbody');
-        usersTableBody.innerHTML = '<tr><td colspan="7">Loading users...</td></tr>';
-        try {
-            const users = await fetchData('/users');
+        async function fetchUsers() {
+            try {
+                const response = await fetch(`${API_URL}/users`);
+                if (response.ok) {
+                    const users = await response.json();
+                    renderUsers(users);
+                } else {
+                    console.error('Failed to fetch users:', await response.json());
+                }
+            } catch (error) {
+                console.error('Error fetching users:', error);
+            }
+        }
+
+        async function saveUser(userData) {
+            try {
+                const method = userData.id ? 'PUT' : 'POST';
+                const url = userData.id ? `${API_URL}/users/${userData.id}` : `${API_URL}/users`;
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+
+                if (response.ok) {
+                    showMessage(`User ${userData.id ? 'updated' : 'created'} successfully.`);
+                    fetchUsers();
+                    toggleModal(false);
+                } else {
+                    const errorData = await response.json();
+                    showMessage(`Error: ${errorData.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error saving user:', error);
+                showMessage('Server error.', 'error');
+            }
+        }
+
+        async function deleteUser(userId) {
+            if (confirm('Are you sure you want to delete this user?')) {
+                try {
+                    const response = await fetch(`${API_URL}/users/${userId}`, { method: 'DELETE' });
+                    if (response.ok) {
+                        showMessage('User deleted successfully.');
+                        fetchUsers();
+                    } else {
+                        const errorData = await response.json();
+                        showMessage(`Error: ${errorData.message}`, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error deleting user:', error);
+                    showMessage('Server error.', 'error');
+                }
+            }
+        }
+
+        // UI Rendering
+        function updateUI() {
+            if (currentUser) {
+                // User Info
+                document.getElementById('user-name').textContent = `${currentUser.firstName} ${currentUser.lastName}`;
+                document.getElementById('user-email').textContent = currentUser.email;
+                document.getElementById('user-emp-id').textContent = currentUser.empId;
+                document.getElementById('user-designation').textContent = currentUser.designation;
+
+                // Assets (if any)
+                const userAssetsList = document.getElementById('user-assets');
+                userAssetsList.innerHTML = '';
+                if (currentUser.assets && currentUser.assets.length > 0) {
+                    currentUser.assets.forEach(asset => {
+                        const li = document.createElement('li');
+                        li.textContent = `${asset.name} (${asset.type})`;
+                        userAssetsList.appendChild(li);
+                    });
+                } else {
+                    userAssetsList.innerHTML = '<li>No assets assigned.</li>';
+                }
+
+                // Admin panel
+                if (currentUser.admin) {
+                    adminPanel.classList.remove('hidden');
+                    fetchUsers();
+                } else {
+                    adminPanel.classList.add('hidden');
+                }
+            }
+        }
+
+        function renderUsers(users) {
             usersTableBody.innerHTML = '';
             users.forEach(user => {
-                const row = usersTableBody.insertRow();
-                row.innerHTML = `
-                    <td>${escapeHtml(user.first_name)}</td>
-                    <td>${escapeHtml(user.last_name)}</td>
-                    <td>${escapeHtml(user.email)}</td>
-                    <td>${escapeHtml(user.emp_id)}</td>
-                    <td>${escapeHtml(user.designation)}</td>
-                    <td>${user.is_admin ? 'Yes' : 'No'}</td>
-                    <td class="action-buttons">
-                        <button class="edit-btn" onclick="editUser(${user.id}, '${escapeHtml(user.first_name)}', '${escapeHtml(user.last_name)}', '${escapeHtml(user.email)}', '${escapeHtml(user.emp_id)}', '${escapeHtml(user.designation)}', '${user.is_admin}')">Edit</button>
-                        <button class="delete-btn" onclick="deleteUser(${user.id})">Delete</button>
+                const tr = document.createElement('tr');
+                tr.className = 'text-gray-700';
+                tr.innerHTML = `
+                    <td class="py-3 px-4">${user.firstName} ${user.lastName}</td>
+                    <td class="py-3 px-4">${user.email}</td>
+                    <td class="py-3 px-4">${user.admin ? 'Admin' : 'User'}</td>
+                    <td class="py-3 px-4 text-center space-x-2 whitespace-nowrap">
+                        <button class="py-1 px-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors edit-user" data-id="${user.id}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="py-1 px-3 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors delete-user" data-id="${user.id}">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
                     </td>
                 `;
+                usersTableBody.appendChild(tr);
             });
-            populateUserSelect(users);
-        } catch (error) {
-            usersTableBody.innerHTML = `<tr><td colspan="7" style="color: red;">Error: ${error.message}</td></tr>`;
         }
-    }
 
-    async function fetchAssets() {
-        const assetsTableBody = document.querySelector('#assets-table tbody');
-        assetsTableBody.innerHTML = '<tr><td colspan="10">Loading assets...</td></tr>';
-        try {
-            const assets = await fetchData('/assets');
-            assetsTableBody.innerHTML = '';
-            assets.forEach(asset => {
-                const row = assetsTableBody.insertRow();
-                row.innerHTML = `
-                    <td>${asset.first_name ? `${escapeHtml(asset.first_name)} ${escapeHtml(asset.last_name)} (${escapeHtml(asset.emp_id)})` : 'Unassigned'}</td>
-                    <td>${escapeHtml(asset.type)}</td>
-                    <td>${escapeHtml(asset.model)}</td>
-                    <td>${escapeHtml(asset.serial_number)}</td>
-                    <td>${escapeHtml(asset.monitor || '-')}</td>
-                    <td>${escapeHtml(asset.keyboard || '-')}</td>
-                    <td>${escapeHtml(asset.mouse || '-')}</td>
-                    <td>${escapeHtml(asset.wifi_lan_ip || '-')}</td>
-                    <td>${escapeHtml(asset.comments || '-')}</td>
-                    <td class="action-buttons">
-                        <button class="edit-btn" onclick="editAsset(${asset.id}, ${asset.user_id}, '${escapeHtml(asset.type)}', '${escapeHtml(asset.model)}', '${escapeHtml(asset.serial_number)}', '${escapeHtml(asset.monitor)}', '${escapeHtml(asset.keyboard)}', '${escapeHtml(asset.mouse)}', '${escapeHtml(asset.wifi_lan_ip)}', '${escapeHtml(asset.comments)}')">Edit</button>
-                        <button class="delete-btn" onclick="deleteAsset(${asset.id})">Delete</button>
-                    </td>
-                `;
-            });
-        } catch (error) {
-            assetsTableBody.innerHTML = `<tr><td colspan="10" style="color: red;">Error: ${error.message}</td></tr>`;
-        }
-    }
-
-    function populateUserSelect(users) {
-        const select = document.getElementById('asset-user-id');
-        select.innerHTML = '<option value="">Unassigned</option>';
-        users.forEach(user => {
-            const option = document.createElement('option');
-            option.value = user.id;
-            option.textContent = `${user.first_name} ${user.last_name} (${user.emp_id})`;
-            select.appendChild(option);
+        // Event Listeners
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            errorMessage.textContent = '';
+            await login(email, password);
         });
-    }
 
-    function showTab(tabId, button) {
-        document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
-        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(tabId).style.display = 'block';
-        button.classList.add('active');
-    }
-
-    function showForm(formId, isEditing = false) {
-        document.querySelectorAll('.form-container').forEach(form => form.classList.remove('active'));
-        document.getElementById(formId).classList.add('active');
-        const submitBtn = document.querySelector(`#${formId} button[type="submit"]`);
-        submitBtn.textContent = isEditing ? 'Update' : 'Save';
-        
-        // Toggle the password field's required state and visibility
-        const passwordInput = document.getElementById('user-password');
-        if (isEditing) {
-            passwordInput.required = false;
-            passwordInput.placeholder = 'New Password (leave blank to keep current)';
-        } else {
-            passwordInput.required = true;
-            passwordInput.placeholder = 'Password';
-        }
-    }
-
-    function hideForm(formId) {
-        document.getElementById(formId).classList.remove('active');
-        document.querySelector(`#${formId} form`).reset();
-    }
-
-    function showUserForm(user = null) {
-        const form = document.getElementById('user-form');
-        form.reset();
-        document.getElementById('user-id').value = '';
-        if (user) {
-            document.getElementById('user-id').value = user.id;
-            document.getElementById('user-first-name').value = user.first_name;
-            document.getElementById('user-last-name').value = user.last_name;
-            document.getElementById('user-email').value = user.email;
-            document.getElementById('user-emp-id').value = user.emp_id;
-            document.getElementById('user-designation').value = user.designation;
-            document.getElementById('user-is-admin').checked = user.is_admin;
-            showForm('user-form-container', true);
-        } else {
-            showForm('user-form-container', false);
-        }
-    }
-    
-    // Correctly handle the boolean value from the onclick attribute
-    function editUser(id, first_name, last_name, email, emp_id, designation, isAdmin) {
-        showUserForm({ 
-            id, 
-            first_name, 
-            last_name, 
-            email, 
-            emp_id, 
-            designation, 
-            is_admin: isAdmin === 'true' 
+        logoutButton.addEventListener('click', () => {
+            localStorage.removeItem('currentUser');
+            currentUser = null;
+            showView('login-view');
         });
-    }
 
-    function showAssetForm(asset = null) {
-        const form = document.getElementById('asset-form');
-        form.reset();
-        document.getElementById('asset-id').value = '';
-        if (asset) {
-            document.getElementById('asset-id').value = asset.id;
-            document.getElementById('asset-user-id').value = asset.user_id;
-            document.getElementById('asset-type').value = asset.type;
-            document.getElementById('asset-model').value = asset.model;
-            document.getElementById('asset-serial-number').value = asset.serial_number;
-            document.getElementById('asset-monitor').value = asset.monitor;
-            document.getElementById('asset-keyboard').value = asset.keyboard;
-            document.getElementById('asset-mouse').value = asset.mouse;
-            document.getElementById('asset-wifi-lan-ip').value = asset.wifi_lan_ip;
-            document.getElementById('asset-comments').value = asset.comments;
-            showForm('asset-form-container', true);
-        } else {
-            showForm('asset-form-container', false);
-        }
-    }
+        showAddUserFormButton.addEventListener('click', () => {
+            modalTitle.textContent = 'Add User';
+            document.getElementById('form-password').required = true;
+            toggleModal(true);
+        });
 
-    function editAsset(id, user_id, type, model, serial_number, monitor, keyboard, mouse, wifi_lan_ip, comments) {
-        showAssetForm({ id, user_id, type, model, serial_number, monitor, keyboard, mouse, wifi_lan_ip, comments });
-    }
+        cancelButton.addEventListener('click', () => toggleModal(false));
+        modalBackdrop.addEventListener('click', () => toggleModal(false));
 
-    document.getElementById('user-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const id = document.getElementById('user-id').value;
-        const userData = {
-            first_name: document.getElementById('user-first-name').value,
-            last_name: document.getElementById('user-last-name').value,
-            email: document.getElementById('user-email').value,
-            emp_id: document.getElementById('user-emp-id').value,
-            designation: document.getElementById('user-designation').value,
-            is_admin: document.getElementById('user-is-admin').checked,
-        };
-        const password = document.getElementById('user-password').value;
-        if (password) {
-            userData.password = password;
-        }
+        usersTableBody.addEventListener('click', (e) => {
+            const target = e.target.closest('button');
+            if (!target) return;
 
-        try {
-            if (id) {
-                await fetchData(`/users/${id}`, 'PUT', userData);
+            const userId = target.dataset.id;
+            if (target.classList.contains('delete-user')) {
+                deleteUser(userId);
+            } else if (target.classList.contains('edit-user')) {
+                const user = Array.from(usersTableBody.rows).find(row => row.querySelector(`[data-id="${userId}"]`));
+                const userEmail = user.cells[1].textContent;
+                const userName = user.cells[0].textContent.split(' ');
+                const userRole = user.cells[2].textContent;
+
+                modalTitle.textContent = 'Edit User';
+                document.getElementById('user-id').value = userId;
+                document.getElementById('form-first-name').value = userName[0];
+                document.getElementById('form-last-name').value = userName.slice(1).join(' ');
+                document.getElementById('form-email').value = userEmail;
+                document.getElementById('form-admin').checked = userRole === 'Admin';
+                document.getElementById('form-password').required = false;
+                
+                toggleModal(true);
+            }
+        });
+
+        userForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userId = document.getElementById('user-id').value;
+            const userData = {
+                id: userId || null,
+                email: document.getElementById('form-email').value,
+                password: document.getElementById('form-password').value,
+                firstName: document.getElementById('form-first-name').value,
+                lastName: document.getElementById('form-last-name').value,
+                empId: document.getElementById('form-emp-id').value,
+                designation: document.getElementById('form-designation').value,
+                admin: document.getElementById('form-admin').checked
+            };
+
+            await saveUser(userData);
+        });
+
+        // Initialize App
+        function init() {
+            const storedUser = localStorage.getItem('currentUser');
+            if (storedUser) {
+                currentUser = JSON.parse(storedUser);
+                updateUI();
+                showView('dashboard-view');
             } else {
-                if (!userData.password) {
-                    showAlert('Password is required for new users.');
-                    return;
-                }
-                await fetchData('/users', 'POST', userData);
+                showView('login-view');
             }
-            hideForm('user-form-container');
-            await fetchUsers();
-        } catch (error) {
-            showAlert('Error saving user: ' + error.message);
         }
-    });
 
-    async function deleteUser(id) {
-        showConfirm('Are you sure you want to delete this user?', async (confirmed) => {
-            if (confirmed) {
-                try {
-                    await fetchData(`/users/${id}`, 'DELETE');
-                    await fetchUsers();
-                } catch (error) {
-                    showAlert('Error deleting user: ' + error.message);
-                }
-            }
-        });
-    }
-
-    document.getElementById('asset-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const id = document.getElementById('asset-id').value;
-        const assetData = {
-            user_id: document.getElementById('asset-user-id').value || null,
-            type: document.getElementById('asset-type').value,
-            model: document.getElementById('asset-model').value,
-            serial_number: document.getElementById('asset-serial-number').value,
-            monitor: document.getElementById('asset-monitor').value,
-            keyboard: document.getElementById('asset-keyboard').value,
-            mouse: document.getElementById('asset-mouse').value,
-            wifi_lan_ip: document.getElementById('asset-wifi-lan-ip').value,
-            comments: document.getElementById('asset-comments').value,
-        };
-        try {
-            if (id) {
-                await fetchData(`/assets/${id}`, 'PUT', assetData);
-            } else {
-                await fetchData('/assets', 'POST', assetData);
-            }
-            hideForm('asset-form-container');
-            await fetchAssets();
-        } catch (error) {
-            showAlert('Error saving asset: ' + error.message);
-        }
-    });
-
-    async function deleteAsset(id) {
-        showConfirm('Are you sure you want to delete this asset?', async (confirmed) => {
-            if (confirmed) {
-                try {
-                    await fetchData(`/assets/${id}`, 'DELETE');
-                    await fetchAssets();
-                } catch (error) {
-                    showAlert('Error deleting asset: ' + error.message);
-                }
-            }
-        });
-    }
-
-    // User functions
-    async function renderUserDashboard() {
-        authContainer.style.display = 'none';
-        dashboardContainer.style.display = 'block';
-        adminDashboard.style.display = 'none';
-        userDashboard.style.display = 'block';
-        portalTitle.textContent = 'My IT Portal';
-        await fetchUserProfile();
-        await fetchUserAssets();
-    }
-
-    async function fetchUserProfile() {
-        const profileInfo = document.getElementById('user-profile-info');
-        profileInfo.innerHTML = 'Loading profile...';
-        try {
-            const user = await fetchData('/profile');
-            profileInfo.innerHTML = `
-                <p><strong>Name:</strong> ${escapeHtml(user.first_name)} ${escapeHtml(user.last_name)}</p>
-                <p><strong>Email:</strong> ${escapeHtml(user.email)}</p>
-                <p><strong>Employee ID:</strong> ${escapeHtml(user.emp_id)}</p>
-                <p><strong>Designation:</strong> ${escapeHtml(user.designation)}</p>
-            `;
-        } catch (error) {
-            profileInfo.innerHTML = `<p style="color: red;">Error loading profile: ${error.message}</p>`;
-        }
-    }
-
-    async function fetchUserAssets() {
-        const userAssetsTableBody = document.querySelector('#user-assets-table tbody');
-        userAssetsTableBody.innerHTML = '<tr><td colspan="8">Loading assets...</td></tr>';
-        try {
-            const assets = await fetchData('/my_assets');
-            userAssetsTableBody.innerHTML = '';
-            if (assets.length === 0) {
-                userAssetsTableBody.innerHTML = '<tr><td colspan="8">No assets assigned to you.</td></tr>';
-            } else {
-                assets.forEach(asset => {
-                    const row = userAssetsTableBody.insertRow();
-                    row.innerHTML = `
-                        <td>${escapeHtml(asset.type)}</td>
-                        <td>${escapeHtml(asset.model)}</td>
-                        <td>${escapeHtml(asset.serial_number)}</td>
-                        <td>${escapeHtml(asset.monitor || '-')}</td>
-                        <td>${escapeHtml(asset.keyboard || '-')}</td>
-                        <td>${escapeHtml(asset.mouse || '-')}</td>
-                        <td>${escapeHtml(asset.wifi_lan_ip || '-')}</td>
-                        <td>${escapeHtml(asset.comments || '-')}</td>
-                    `;
-                });
-            }
-        } catch (error) {
-            userAssetsTableBody.innerHTML = `<tr><td colspan="8" style="color: red;">Error loading assets: ${error.message}</td></tr>`;
-        }
-    }
-});
-</script>
+        init();
+    </script>
 </body>
 </html>
 
