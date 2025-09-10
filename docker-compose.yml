@@ -30,6 +30,12 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "3338:3338"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+    restart: always
 volumes:
   postgres_data:
