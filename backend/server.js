@@ -1,144 +1,224 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const jwt = require('jsonwebtoken');
+const { Pool } = require('pg');
+const bcrypt = require('bcryptjs');
 
 const app = express();
-const PORT = 3337;
-const JWT_SECRET = 'your-secret-key'; // In a real app, use a strong, environment variable
+const port = 3337;
 
-// Middleware
 app.use(cors());
 app.use(bodyParser.json());
 
-// In-memory "database" for demonstration
-const users = [
-    { id: 1, first_name: 'John', last_name: 'Doe', email: 'admin@example.com', password: 'password123', is_admin: true, emp_id: 'A001', designation: 'Administrator' },
-    { id: 2, first_name: 'Jane', last_name: 'Smith', email: 'jane@example.com', password: 'password123', is_admin: false, emp_id: 'E001', designation: 'Software Engineer' },
-];
+// Database connection
+const pool = new Pool({
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: 5432,
+});
 
-const assets = [
-    { id: 1, user_id: 2, type: 'Laptop', model: 'Dell XPS 15', serial_number: 'SN-001', monitor: 'Dell P2419H', keyboard: 'Logitech K120', mouse: 'Logitech M185', wifi_lan_ip: '192.168.1.101', comments: 'Standard issue for new hires.' },
-    { id: 2, user_id: 2, type: 'Desktop', model: 'HP Spectre', serial_number: 'SN-002', monitor: 'Samsung 4K', keyboard: 'Apple Magic Keyboard', mouse: 'Apple Magic Mouse', wifi_lan_ip: '192.168.1.102', comments: 'High-performance machine.' },
-    { id: 3, user_id: null, type: 'Laptop', model: 'MacBook Pro', serial_number: 'SN-003', monitor: null, keyboard: null, mouse: null, wifi_lan_ip: null, comments: 'Unassigned, ready for deployment.' },
-];
+// Check database connection and create users table if it doesn't exist
+const initializeDatabase = async () => {
+    try {
+        const client = await pool.connect();
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                password_hash VARCHAR(255) NOT NULL,
+                first_name VARCHAR(255),
+                last_name VARCHAR(255),
+                emp_id VARCHAR(255),
+                designation VARCHAR(255),
+                is_admin BOOLEAN DEFAULT FALSE,
+                assets JSONB DEFAULT '[]'::jsonb
+            );
+        `);
 
-// Middleware to verify JWT token
-const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    if (token == null) return res.sendStatus(401);
+        // Check for default admin and create if it doesn't exist
+        const adminCount = await client.query('SELECT COUNT(*) FROM users WHERE email = $1', ['admin@portal.com']);
+        if (parseInt(adminCount.rows[0].count) === 0) {
+            const adminPassword = 'adminpassword';
+            const salt = await bcrypt.genSalt(10);
+            const adminPasswordHash = await bcrypt.hash(adminPassword, salt);
+            await client.query(
+                `INSERT INTO users (email, password_hash, first_name, last_name, emp_id, designation, is_admin)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                ['admin@portal.com', adminPasswordHash, 'Admin', 'User', '0001', 'Administrator', true]
+            );
+            console.log('Default admin user created.');
+        }
 
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.sendStatus(403);
-        req.user = user;
-        next();
-    });
-};
-
-// Admin authorization middleware
-const authorizeAdmin = (req, res, next) => {
-    if (!req.user.is_admin) {
-        return res.status(403).json({ error: 'Forbidden' });
+        client.release();
+        console.log('Database connected and initialized.');
+    } catch (err) {
+        console.error('Error connecting to or initializing the database', err);
     }
-    next();
 };
 
-// API Routes
-app.post('/api/login', (req, res) => {
+initializeDatabase();
+
+// --- API ROUTES ---
+
+// Login route
+app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
-    const user = users.find(u => u.email === email && u.password === password);
+    try {
+        const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        const user = result.rows[0];
 
-    if (user) {
-        const token = jwt.sign({ id: user.id, is_admin: user.is_admin }, JWT_SECRET, { expiresIn: '1h' });
-        res.json({ token, user: { id: user.id, email: user.email, is_admin: user.is_admin, first_name: user.first_name, last_name: user.last_name, emp_id: user.emp_id, designation: user.designation } });
-    } else {
-        res.status(401).json({ error: 'Invalid credentials' });
+        if (!user) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password_hash);
+        if (isMatch) {
+            const userData = {
+                firstName: user.first_name,
+                lastName: user.last_name,
+                email: user.email,
+                empId: user.emp_id,
+                designation: user.designation,
+                admin: user.is_admin,
+                assets: user.assets
+            };
+            res.json(userData);
+        } else {
+            res.status(401).json({ message: 'Invalid credentials' });
+        }
+    } catch (err) {
+        console.error('Error during login:', err);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 
-// User Profile
-app.get('/api/profile', authenticateToken, (req, res) => {
-    const user = users.find(u => u.id === req.user.id);
-    if (!user) {
-        return res.status(404).json({ error: 'User not found' });
+// User CRUD operations
+app.get('/api/users', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM users ORDER BY id');
+        const users = result.rows.map(user => ({
+            id: user.id,
+            email: user.email,
+            firstName: user.first_name,
+            lastName: user.last_name,
+            empId: user.emp_id,
+            designation: user.designation,
+            admin: user.is_admin,
+        }));
+        res.json(users);
+    } catch (err) {
+        console.error('Error fetching users:', err);
+        res.status(500).json({ message: 'Server error' });
     }
-    res.json(user);
 });
 
-// User Assets
-app.get('/api/my_assets', authenticateToken, (req, res) => {
-    const userAssets = assets.filter(a => a.user_id === req.user.id);
-    res.json(userAssets);
-});
-
-// Admin Routes (protected)
-app.get('/api/users', authenticateToken, authorizeAdmin, (req, res) => {
-    res.json(users);
-});
-
-app.post('/api/users', authenticateToken, authorizeAdmin, (req, res) => {
-    const newUser = { id: users.length + 1, ...req.body, is_admin: !!req.body.is_admin };
-    users.push(newUser);
-    res.status(201).json(newUser);
-});
-
-app.put('/api/users/:id', authenticateToken, authorizeAdmin, (req, res) => {
-    const userIndex = users.findIndex(u => u.id === parseInt(req.params.id));
-    if (userIndex === -1) {
-        return res.status(404).json({ error: 'User not found' });
+app.post('/api/users', async (req, res) => {
+    const { email, password, firstName, lastName, empId, designation, admin } = req.body;
+    try {
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(password, salt);
+        await pool.query(
+            `INSERT INTO users (email, password_hash, first_name, last_name, emp_id, designation, is_admin, assets)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [email, passwordHash, firstName, lastName, empId, designation, admin, '[]']
+        );
+        res.status(201).json({ message: 'User created successfully' });
+    } catch (err) {
+        console.error('Error creating user:', err);
+        res.status(500).json({ message: 'Server error' });
     }
-    users[userIndex] = { ...users[userIndex], ...req.body };
-    res.json(users[userIndex]);
 });
 
-app.delete('/api/users/:id', authenticateToken, authorizeAdmin, (req, res) => {
-    const userIndex = users.findIndex(u => u.id === parseInt(req.params.id));
-    if (userIndex === -1) {
-        return res.status(404).json({ error: 'User not found' });
+app.put('/api/users/:id', async (req, res) => {
+    const userId = req.params.id;
+    const { email, password, firstName, lastName, empId, designation, admin } = req.body;
+
+    try {
+        let updateQuery = `UPDATE users SET email=$1, first_name=$2, last_name=$3, emp_id=$4, designation=$5, is_admin=$6`;
+        const queryParams = [email, firstName, lastName, empId, designation, admin, userId];
+
+        if (password) {
+            const salt = await bcrypt.genSalt(10);
+            const passwordHash = await bcrypt.hash(password, salt);
+            updateQuery += `, password_hash=$7`;
+            queryParams.splice(6, 0, passwordHash);
+        }
+
+        updateQuery += ` WHERE id=$${queryParams.length}`;
+        await pool.query(updateQuery, queryParams);
+        res.json({ message: 'User updated successfully' });
+    } catch (err) {
+        console.error('Error updating user:', err);
+        res.status(500).json({ message: 'Server error' });
     }
-    users.splice(userIndex, 1);
-    res.status(204).end();
 });
 
-app.get('/api/assets', authenticateToken, authorizeAdmin, (req, res) => {
-    const assetsWithUserInfo = assets.map(asset => {
-        const user = users.find(u => u.id === asset.user_id);
-        return {
-            ...asset,
-            first_name: user ? user.first_name : null,
-            last_name: user ? user.last_name : null,
-            emp_id: user ? user.emp_id : null,
-        };
-    });
-    res.json(assetsWithUserInfo);
-});
-
-app.post('/api/assets', authenticateToken, authorizeAdmin, (req, res) => {
-    const newAsset = { id: assets.length + 1, ...req.body, user_id: req.body.user_id ? parseInt(req.body.user_id) : null };
-    assets.push(newAsset);
-    res.status(201).json(newAsset);
-});
-
-app.put('/api/assets/:id', authenticateToken, authorizeAdmin, (req, res) => {
-    const assetIndex = assets.findIndex(a => a.id === parseInt(req.params.id));
-    if (assetIndex === -1) {
-        return res.status(404).json({ error: 'Asset not found' });
+app.delete('/api/users/:id', async (req, res) => {
+    const userId = req.params.id;
+    try {
+        await pool.query('DELETE FROM users WHERE id = $1', [userId]);
+        res.json({ message: 'User deleted successfully' });
+    } catch (err) {
+        console.error('Error deleting user:', err);
+        res.status(500).json({ message: 'Server error' });
     }
-    assets[assetIndex] = { ...assets[assetIndex], ...req.body, user_id: req.body.user_id ? parseInt(req.body.user_id) : null };
-    res.json(assets[assetIndex]);
 });
 
-app.delete('/api/assets/:id', authenticateToken, authorizeAdmin, (req, res) => {
-    const assetIndex = assets.findIndex(a => a.id === parseInt(req.params.id));
-    if (assetIndex === -1) {
-        return res.status(404).json({ error: 'Asset not found' });
+// Asset CRUD operations
+app.get('/api/assets', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT
+                u.id AS user_id,
+                u.email AS user_email,
+                u.first_name,
+                u.last_name,
+                json_agg(jsonb_build_object('name', a.asset_name, 'type', a.asset_type)) AS assets
+            FROM users u
+            JOIN LATERAL jsonb_array_elements(u.assets) AS a(asset) ON true
+            GROUP BY u.id, u.email, u.first_name, u.last_name
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching assets:', err);
+        res.status(500).json({ message: 'Server error' });
     }
-    assets.splice(assetIndex, 1);
-    res.status(204).end();
 });
 
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+app.post('/api/assets', async (req, res) => {
+    const { userId, assetName, assetType } = req.body;
+    try {
+        await pool.query(
+            `UPDATE users SET assets = assets || $1::jsonb WHERE id = $2`,
+            [`[{"asset_name": "${assetName}", "asset_type": "${assetType}"}]`, userId]
+        );
+        res.status(201).json({ message: 'Asset assigned successfully' });
+    } catch (err) {
+        console.error('Error assigning asset:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.delete('/api/assets/:userId/:assetName', async (req, res) => {
+    const { userId, assetName } = req.params;
+    try {
+        await pool.query(
+            `UPDATE users SET assets = assets - (
+                SELECT idx FROM users u, jsonb_array_elements(u.assets) WITH ORDINALITY arr(elem, idx)
+                WHERE u.id = $1 AND elem->>'asset_name' = $2
+            ) WHERE id = $1`,
+            [userId, assetName]
+        );
+        res.json({ message: 'Asset unassigned successfully' });
+    } catch (err) {
+        console.error('Error unassigning asset:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+app.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
 });
 
