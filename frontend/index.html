@@ -108,8 +108,8 @@
             const modalMessage = document.getElementById('modal-message');
             const modalOkButton = document.getElementById('modal-ok-button');
 
-            // API URL for the backend service
-            const API_URL = 'http://localhost:3337/api/login';
+            // API URL for the backend service, now a relative path
+            const API_URL = '/api/login';
 
             function showModal(message) {
                 modalMessage.textContent = message;

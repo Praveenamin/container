@@ -32,7 +32,9 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   frontend:
-    image: nginx:alpine
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
       - "3338:80"
     volumes:
