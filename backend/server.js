@@ -58,7 +58,14 @@ const initializeDatabase = async () => {
     }
 };
 
-initializeDatabase();
+const startServer = async () => {
+    await initializeDatabase();
+    app.listen(port, () => {
+        console.log(`Server is running on http://localhost:${port}`);
+    });
+};
+
+startServer();
 
 // --- API ROUTES ---
 
@@ -221,4 +228,3 @@ app.delete('/api/assets/:userId/:assetName', async (req, res) => {
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
 });
-
