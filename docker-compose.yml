@@ -34,7 +34,7 @@ services:
   frontend:
     image: nginx:alpine
     ports:
-      - "3338:3338"
+      - "3338:80"
     volumes:
       - ./frontend:/usr/share/nginx/html
     restart: always
