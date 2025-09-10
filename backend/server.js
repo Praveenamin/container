@@ -53,13 +53,22 @@ const initializeDatabase = async () => {
 
         client.release();
         console.log('Database connected and initialized.');
+        return true;
     } catch (err) {
         console.error('Error connecting to or initializing the database', err);
+        return false;
     }
 };
 
 const startServer = async () => {
-    await initializeDatabase();
+    let dbReady = false;
+    while (!dbReady) {
+        console.log('Attempting to connect to database...');
+        dbReady = await initializeDatabase();
+        if (!dbReady) {
+            await new Promise(res => setTimeout(res, 5000)); // Wait 5 seconds before retrying
+        }
+    }
     app.listen(port, () => {
         console.log(`Server is running on http://localhost:${port}`);
     });
@@ -225,6 +234,3 @@ app.delete('/api/assets/:userId/:assetName', async (req, res) => {
     }
 });
 
-app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
-});

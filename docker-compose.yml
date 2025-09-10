@@ -2,39 +2,34 @@ version: '3.8'
 
 services:
   backend:
-    build: ./backend
-    container_name: employee-portal-backend
+    build:
+      context: ./backend
+      dockerfile: ./backend/Dockerfile
     ports:
       - "3337:3337"
+    volumes:
+      - ./backend:/usr/src/app
     environment:
+      - DB_HOST=postgres
       - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
-      - DB_HOST=db
+      - DB_PASSWORD=${DB_PASSWORD}
     depends_on:
-      - db
-    restart: unless-stopped
+      - postgres
+    command: sh -c "sleep 5 && node server.js"
+    restart: always
 
-  frontend:
-    build: ./frontend
-    container_name: employee-portal-frontend
-    ports:
-      - "3338:80"
-    depends_on:
-      - backend
-    restart: unless-stopped
-
-  db:
-    image: postgres:14-alpine
-    container_name: employee-portal-db
+  postgres:
+    image: postgres:13-alpine
+    restart: always
     environment:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
+    ports:
+      - "5432:5432"
     volumes:
-      - portal-db-data:/var/lib/postgresql/data
-    restart: unless-stopped
+      - postgres_data:/var/lib/postgresql/data
 
 volumes:
-  portal-db-data:
-
+  postgres_data:
