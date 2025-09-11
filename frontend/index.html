@@ -248,7 +248,7 @@
         const appId = rawAppId.split('/')[0];
         console.log(`Raw App ID: ${rawAppId}`);
         console.log(`Parsed App ID: ${appId}`);
-
+        
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         
@@ -325,21 +325,38 @@
             }
         }
 
-        function displayDashboard(role, user) {
-            loadingScreen.classList.add('hidden');
-            loginSection.classList.add('hidden');
-            if (role === 'admin') {
-                adminDashboardLayout.classList.remove('hidden');
-                employeeDashboard.classList.add('hidden');
-                userEmailAdminSpan.textContent = user.email;
-                userRoleAdminSpan.textContent = user.role;
-                showPage('user-management');
-                setupRealtimeListener(user.id);
-            } else {
-                employeeDashboard.classList.remove('hidden');
-                adminDashboardLayout.classList.add('hidden');
-                userEmailEmployeeSpan.textContent = user.email;
-                userRoleEmployeeSpan.textContent = user.role;
+        async function checkAndDisplayDashboard(user) {
+            if (!user) {
+                console.error("User object is null or undefined.");
+                return;
+            }
+            try {
+                const employeesRef = collection(db, `artifacts/${appId}/users/${userId}/employees`);
+                const q = query(employeesRef, where("email", "==", user.email));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    console.error("User data not found in employees collection.");
+                    return;
+                }
+
+                const userData = querySnapshot.docs[0].data();
+                if (userData.role === 'admin') {
+                    employeeDashboard.classList.add('hidden');
+                    adminDashboardLayout.classList.remove('hidden');
+                    userEmailAdminSpan.textContent = user.email;
+                    userRoleAdminSpan.textContent = userData.role;
+                    showPage('user-management');
+                    setupRealtimeListener(userId);
+                } else {
+                    adminDashboardLayout.classList.add('hidden');
+                    employeeDashboard.classList.remove('hidden');
+                    userEmailEmployeeSpan.textContent = user.email;
+                    userRoleEmployeeSpan.textContent = userData.role;
+                }
+            } catch (error) {
+                console.error("Error fetching user role:", error);
+                showMessageModal("Failed to load user dashboard.");
             }
         }
         
@@ -413,7 +430,6 @@
             const password = document.getElementById('password').value;
             
             try {
-                // Query for the user document based on email and password.
                 const q = query(collection(db, `artifacts/${appId}/users/${userId}/employees`), where("email", "==", email), where("password", "==", password));
                 const querySnapshot = await getDocs(q);
                 
@@ -422,9 +438,8 @@
                     return;
                 }
 
-                const userDoc = querySnapshot.docs[0];
-                const userData = userDoc.data();
-                displayDashboard(userData.role, { id: userDoc.id, email: userData.email, role: userData.role });
+                const userData = querySnapshot.docs[0].data();
+                displayDashboard(userData.role, { id: querySnapshot.docs[0].id, email: userData.email, role: userData.role });
             } catch (error) {
                 console.error("Login error: ", error);
                 showMessageModal('Login failed. Please try again.');
@@ -444,7 +459,6 @@
                 role: document.getElementById('new-user-role').value
             };
             try {
-                // Check if email already exists
                 const q = query(collection(db, `artifacts/${appId}/users/${userId}/employees`), where("email", "==", newEmail));
                 const querySnapshot = await getDocs(q);
                 if (!querySnapshot.empty) {
@@ -541,12 +555,14 @@
         // Main auth state listener
         onAuthStateChanged(auth, async (user) => {
             loadingScreen.classList.add('hidden');
+            loginSection.classList.remove('hidden');
+
             if (user) {
                 userId = user.uid;
                 const employeesCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/employees`);
                 
                 try {
-                    // Use a transaction to safely check and create the admin user
+                    // This transaction ensures the admin user is created only on the very first run
                     await runTransaction(db, async (transaction) => {
                         const q = query(employeesCollectionRef);
                         const snapshot = await getDocs(q);
@@ -563,30 +579,11 @@
                                 password: 'password123',
                                 role: 'admin'
                             });
+                            console.log("Default admin user created.");
                         }
                     });
-
-                    // Once authentication is set up, show the login form
-                    loginSection.classList.remove('hidden');
-
                 } catch (error) {
                     console.error('Error during initial setup:', error);
-                    showMessageModal('An error occurred during setup. Please try reloading.');
-                    loginSection.classList.remove('hidden');
-                }
-
-            } else {
-                // Not authenticated, so hide loading and show login
-                loginSection.classList.remove('hidden');
-
-                // Try to sign in with custom token on the first load
-                if (initialAuthToken) {
-                    try {
-                        await signInWithCustomToken(auth, initialAuthToken);
-                    } catch (error) {
-                        console.error('Error with custom token:', error);
-                        // The UI is already showing the login form, so no need to do anything else.
-                    }
                 }
             }
         });
