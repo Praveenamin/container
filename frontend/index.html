@@ -41,11 +41,6 @@
                     Sign in
                 </button>
             </form>
-            <div id="login-info" class="mt-4 text-center text-xs text-gray-500">
-                <p>Default Admin credentials are:</p>
-                <p class="font-bold">Email: praveen.b@assistanz.com</p>
-                <p class="font-bold">Password: password123</p>
-            </div>
         </div>
     </div>
 
@@ -241,10 +236,19 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // Debugging utility
+        console.log("Setting Firestore log level to Debug");
+        const { setLogLevel } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+        setLogLevel('debug');
 
         // Firebase configuration and initialization
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const appId = rawAppId.split('/')[0];
+        console.log(`Raw App ID: ${rawAppId}`);
+        console.log(`Parsed App ID: ${appId}`);
+
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         
@@ -254,8 +258,6 @@
         const auth = getAuth(app);
         
         let userId = null;
-        let userRole = 'employee';
-        let userEmail = '';
         
         // UI elements
         const loadingScreen = document.getElementById('loading-screen');
@@ -287,7 +289,7 @@
             'user-management': document.getElementById('user-management-page'),
             'it-assets': document.getElementById('it-assets-page'),
             'announcements': document.getElementById('announcements-page'),
-            'metrics': document.getElementById('menu-metrics')
+            'metrics': document.getElementById('metrics-page')
         };
         const menuButtons = {
             'user-management': document.getElementById('menu-user-management'),
@@ -315,14 +317,17 @@
         function showPage(pageId) {
             Object.values(pages).forEach(page => page.classList.add('hidden'));
             Object.values(menuButtons).forEach(button => button.classList.remove('active'));
-            pages[pageId].classList.remove('hidden');
-            menuButtons[pageId].classList.add('active');
+            if (pages[pageId]) {
+                pages[pageId].classList.remove('hidden');
+            }
+            if (menuButtons[pageId]) {
+                menuButtons[pageId].classList.add('active');
+            }
         }
 
         function displayDashboard(role, user) {
             loadingScreen.classList.add('hidden');
             loginSection.classList.add('hidden');
-            
             if (role === 'admin') {
                 adminDashboardLayout.classList.remove('hidden');
                 employeeDashboard.classList.add('hidden');
@@ -409,7 +414,6 @@
             
             try {
                 // Query for the user document based on email and password.
-                // The collection path is under the current user's UID (userId).
                 const q = query(collection(db, `artifacts/${appId}/users/${userId}/employees`), where("email", "==", email), where("password", "==", password));
                 const querySnapshot = await getDocs(q);
                 
@@ -533,46 +537,56 @@
           signOut(auth);
           location.reload();
         });
-
+        
         // Main auth state listener
         onAuthStateChanged(auth, async (user) => {
+            loadingScreen.classList.add('hidden');
             if (user) {
                 userId = user.uid;
-                const adminEmail = 'praveen.b@assistanz.com';
-                const adminRef = doc(db, `artifacts/${appId}/users/${userId}/employees`, adminEmail);
+                const employeesCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/employees`);
                 
-                // Check if the specific admin user exists
-                const adminDoc = await getDoc(adminRef);
-
-                if (!adminDoc.exists()) {
-                    // Create the admin user if it doesn't exist
-                    await setDoc(adminRef, {
-                        firstName: 'Praveen',
-                        lastName: 'B',
-                        empId: 'A001',
-                        designation: 'Admin',
-                        email: adminEmail,
-                        password: 'password123',
-                        role: 'admin',
+                try {
+                    // Use a transaction to safely check and create the admin user
+                    await runTransaction(db, async (transaction) => {
+                        const q = query(employeesCollectionRef);
+                        const snapshot = await getDocs(q);
+                        
+                        if (snapshot.empty) {
+                            // This is the first run, so create the admin user
+                            const adminDocRef = doc(employeesCollectionRef);
+                            transaction.set(adminDocRef, {
+                                firstName: 'Praveen',
+                                lastName: 'B',
+                                empId: 'A001',
+                                designation: 'Admin',
+                                email: 'praveen.b@assistanz.com',
+                                password: 'password123',
+                                role: 'admin'
+                            });
+                        }
                     });
+
+                    // Once authentication is set up, show the login form
+                    loginSection.classList.remove('hidden');
+
+                } catch (error) {
+                    console.error('Error during initial setup:', error);
+                    showMessageModal('An error occurred during setup. Please try reloading.');
+                    loginSection.classList.remove('hidden');
                 }
-                
-                loadingScreen.classList.add('hidden');
-                loginSection.classList.remove('hidden');
+
             } else {
-                // If not authenticated, try to sign in with custom token
+                // Not authenticated, so hide loading and show login
+                loginSection.classList.remove('hidden');
+
+                // Try to sign in with custom token on the first load
                 if (initialAuthToken) {
                     try {
                         await signInWithCustomToken(auth, initialAuthToken);
                     } catch (error) {
                         console.error('Error with custom token:', error);
-                        loadingScreen.classList.add('hidden');
-                        loginSection.classList.remove('hidden');
+                        // The UI is already showing the login form, so no need to do anything else.
                     }
-                } else {
-                    console.error("No custom auth token provided.");
-                    loadingScreen.classList.add('hidden');
-                    loginSection.classList.remove('hidden');
                 }
             }
         });
