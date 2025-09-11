@@ -26,9 +26,6 @@
             text-align: center;
             transition: all 0.3s ease-in-out;
         }
-        .container:hover {
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
-        }
         .modal {
             display: none;
             position: fixed;
@@ -57,34 +54,169 @@
             cursor: pointer;
             margin-top: 10px;
         }
+        #admin-table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch; /* for smooth scrolling on iOS */
+        }
+        /* New styles for the admin dashboard layout */
+        .admin-layout {
+            display: none;
+            width: 100%;
+            min-height: 100vh;
+            background-color: #f0f4f8;
+        }
+        @media (min-width: 768px) {
+            .admin-layout {
+                display: grid;
+                grid-template-columns: 250px 1fr;
+            }
+        }
+        .admin-sidebar {
+            background-color: #1a202c;
+            color: #e2e8f0;
+            padding: 2rem 1.5rem;
+            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
+        }
+        .sidebar-item {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .sidebar-item:hover {
+            background-color: #2d3748;
+        }
+        .sidebar-item.active {
+            background-color: #4c51bf;
+            color: #ffffff;
+        }
+        .admin-content {
+            padding: 2rem;
+            background-color: #ffffff;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
+            border-radius: 12px;
+            margin: 1rem;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
 
-    <div class="container mx-auto p-8 rounded-lg shadow-xl bg-white">
+    <!-- Login section -->
+    <div id="login-section" class="container mx-auto p-8 rounded-lg shadow-xl bg-white">
         <h1 class="text-3xl font-bold text-gray-800 mb-6">Employee Portal</h1>
-        
-        <div id="login-section">
-            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Login</h2>
-            <form id="login-form" class="space-y-4">
-                <div>
-                    <input type="email" id="email" placeholder="Email" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                </div>
-                <div>
-                    <input type="password" id="password" placeholder="Password" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                </div>
-                <button type="submit" class="w-full p-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors duration-200">
-                    Login
-                </button>
-            </form>
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Login</h2>
+        <form id="login-form" class="space-y-4">
+            <div>
+                <input type="email" id="email" placeholder="Email" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+            </div>
+            <div>
+                <input type="password" id="password" placeholder="Password" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+            </div>
+            <button type="submit" class="w-full p-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors duration-200">
+                Login
+            </button>
+        </form>
+    </div>
+
+    <!-- Employee Dashboard section (for non-admin users) -->
+    <div id="employee-dashboard" class="hidden container mx-auto p-8 rounded-lg shadow-xl bg-white">
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Welcome, <span id="user-email"></span></h2>
+        <p class="text-gray-600">You are logged in with a <span id="user-role" class="font-bold"></span> account.</p>
+        <button id="logout-button" class="mt-4 p-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors duration-200">
+            Logout
+        </button>
+    </div>
+
+    <!-- Admin Dashboard section with new layout -->
+    <div id="admin-dashboard-layout" class="admin-layout">
+        <!-- Left Sidebar -->
+        <div class="admin-sidebar">
+            <h1 class="text-xl font-bold mb-8">Admin Menu</h1>
+            <nav>
+                <button id="menu-user-management" class="sidebar-item active">User Management</button>
+                <button id="menu-it-assets" class="sidebar-item">IT Assets</button>
+                <button id="menu-announcements" class="sidebar-item">Announcements</button>
+                <button id="menu-metrics" class="sidebar-item">Metrics</button>
+            </nav>
+            <button id="admin-logout-button" class="sidebar-item mt-8 bg-red-600 hover:bg-red-700">Logout</button>
         </div>
 
-        <div id="employee-dashboard" class="hidden text-left mt-6">
-            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Welcome, <span id="user-email"></span></h2>
-            <p class="text-gray-600">You are logged in with a <span id="user-role" class="font-bold"></span> account.</p>
-            <button id="logout-button" class="mt-4 p-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors duration-200">
-                Logout
-            </button>
+        <!-- Main Content Area -->
+        <div class="admin-content-area p-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">Admin Dashboard</h1>
+
+            <!-- User Management Page -->
+            <div id="user-management-page" class="admin-content">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">User Management</h2>
+                <p class="text-gray-600 mb-4">Manage users below.</p>
+
+                <form id="add-user-form" class="space-y-4 mb-8">
+                    <h3 class="text-xl font-semibold text-gray-700">Add New User</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="email" id="new-user-email" placeholder="Email" class="p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                        <input type="password" id="new-user-password" placeholder="Password" class="p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <label class="text-gray-700">Role:</label>
+                        <select id="new-user-role" class="p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="employee">Employee</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full p-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors duration-200">
+                        Add User
+                    </button>
+                </form>
+
+                <h3 class="text-xl font-semibold text-gray-700 mb-4">Existing Users</h3>
+                <div id="admin-table-container" class="border border-gray-200 rounded-lg shadow-inner">
+                    <table id="users-table" class="min-w-full bg-white">
+                        <thead class="sticky top-0 bg-gray-50 z-10">
+                            <tr>
+                                <th class="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-600">Email</th>
+                                <th class="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-600">Role</th>
+                                <th class="py-2 px-4 border-b border-gray-200 text-right text-sm font-semibold text-gray-600">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <!-- User rows will be inserted here by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- IT Assets Page -->
+            <div id="it-assets-page" class="admin-content hidden">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">IT Assets Management</h2>
+                <p class="text-gray-600">This section will contain tools for managing IT assets, such as laptops, monitors, and software licenses. It is under construction.</p>
+                <div class="mt-8 p-4 bg-gray-100 rounded-lg text-center">
+                    <span class="text-5xl" role="img" aria-label="Tools">🛠️</span>
+                </div>
+            </div>
+
+            <!-- Announcements Page -->
+            <div id="announcements-page" class="admin-content hidden">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Announcements</h2>
+                <p class="text-gray-600">Here you can create, edit, and publish announcements for all employees. It is under construction.</p>
+                <div class="mt-8 p-4 bg-gray-100 rounded-lg text-center">
+                    <span class="text-5xl" role="img" aria-label="Megaphone">📢</span>
+                </div>
+            </div>
+
+            <!-- Metrics Page -->
+            <div id="metrics-page" class="admin-content hidden">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">System Metrics</h2>
+                <p class="text-gray-600">This page will display key system metrics and analytics. It is under construction.</p>
+                <div class="mt-8 p-4 bg-gray-100 rounded-lg text-center">
+                    <span class="text-5xl" role="img" aria-label="Chart">📈</span>
+                </div>
+            </div>
+
         </div>
     </div>
     
@@ -100,16 +232,33 @@
         document.addEventListener('DOMContentLoaded', () => {
             const loginForm = document.getElementById('login-form');
             const dashboard = document.getElementById('employee-dashboard');
+            const adminDashboardLayout = document.getElementById('admin-dashboard-layout');
             const loginSection = document.getElementById('login-section');
             const userEmailSpan = document.getElementById('user-email');
             const userRoleSpan = document.getElementById('user-role');
             const logoutButton = document.getElementById('logout-button');
+            const adminLogoutButton = document.getElementById('admin-logout-button');
+            const addUserForm = document.getElementById('add-user-form');
+            const usersTableBody = document.getElementById('users-table-body');
             const modal = document.getElementById('custom-modal');
             const modalMessage = document.getElementById('modal-message');
             const modalOkButton = document.getElementById('modal-ok-button');
 
-            // API URL for the backend service, now a relative path
-            const API_URL = '/api/login';
+            // Pages and Menu buttons
+            const pages = {
+                'user-management': document.getElementById('user-management-page'),
+                'it-assets': document.getElementById('it-assets-page'),
+                'announcements': document.getElementById('announcements-page'),
+                'metrics': document.getElementById('metrics-page')
+            };
+            const menuButtons = {
+                'user-management': document.getElementById('menu-user-management'),
+                'it-assets': document.getElementById('menu-it-assets'),
+                'announcements': document.getElementById('menu-announcements'),
+                'metrics': document.getElementById('menu-metrics')
+            };
+
+            const API_BASE_URL = '/api';
 
             function showModal(message) {
                 modalMessage.textContent = message;
@@ -119,14 +268,80 @@
             modalOkButton.onclick = function() {
                 modal.style.display = 'none';
             };
+            
+            function showPage(pageId) {
+                // Hide all pages and remove active class from all menu buttons
+                Object.values(pages).forEach(page => page.classList.add('hidden'));
+                Object.values(menuButtons).forEach(button => button.classList.remove('active'));
 
+                // Show the selected page and add active class to its button
+                pages[pageId].classList.remove('hidden');
+                menuButtons[pageId].classList.add('active');
+
+                // If it's the user management page, render the users
+                if (pageId === 'user-management') {
+                    renderUsers();
+                }
+            }
+
+            async function renderUsers() {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/users?role=admin`);
+                    const users = await response.json();
+                    
+                    if (response.ok) {
+                        usersTableBody.innerHTML = '';
+                        users.forEach(user => {
+                            const row = document.createElement('tr');
+                            row.className = 'border-b border-gray-100 last:border-b-0';
+                            row.innerHTML = `
+                                <td class="py-3 px-4 text-sm text-gray-800">${user.email}</td>
+                                <td class="py-3 px-4 text-sm text-gray-800 capitalize">${user.role}</td>
+                                <td class="py-3 px-4 text-sm text-right">
+                                    <button class="delete-user-btn p-1 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-200" data-user-id="${user.id}">
+                                        Delete
+                                    </button>
+                                </td>
+                            `;
+                            usersTableBody.appendChild(row);
+                        });
+
+                        document.querySelectorAll('.delete-user-btn').forEach(button => {
+                            button.addEventListener('click', handleDeleteUser);
+                        });
+                    } else {
+                        showModal(users.message || 'Failed to fetch users.');
+                    }
+                } catch (error) {
+                    console.error('Error fetching users:', error);
+                    showModal('Failed to fetch users. Server may be down.');
+                }
+            }
+
+            async function handleDeleteUser(e) {
+                const userId = e.target.dataset.userId;
+                try {
+                    const response = await fetch(`${API_BASE_URL}/users/${userId}?role=admin`, {
+                        method: 'DELETE',
+                    });
+                    const data = await response.json();
+                    showModal(data.message);
+                    if (response.ok) {
+                        renderUsers(); // Refresh the user list
+                    }
+                } catch (error) {
+                    console.error('Error deleting user:', error);
+                    showModal('Failed to delete user.');
+                }
+            }
+            
             loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const email = document.getElementById('email').value;
                 const password = document.getElementById('password').value;
 
                 try {
-                    const response = await fetch(API_URL, {
+                    const response = await fetch(`${API_BASE_URL}/login`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -140,7 +355,12 @@
                         userEmailSpan.textContent = data.user.email;
                         userRoleSpan.textContent = data.user.role;
                         loginSection.classList.add('hidden');
-                        dashboard.classList.remove('hidden');
+                        if (data.user.role === 'admin') {
+                            adminDashboardLayout.style.display = 'grid';
+                            showPage('user-management');
+                        } else {
+                            dashboard.classList.remove('hidden');
+                        }
                     } else {
                         showModal(data.message || 'Login failed: Failed to fetch');
                     }
@@ -150,11 +370,48 @@
                 }
             });
 
+            addUserForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('new-user-email').value;
+                const password = document.getElementById('new-user-password').value;
+                const role = document.getElementById('new-user-role').value;
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/users?role=admin`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ email, password, role }),
+                    });
+                    const data = await response.json();
+                    showModal(data.message);
+                    if (response.ok) {
+                        addUserForm.reset();
+                        renderUsers(); // Refresh the user list
+                    }
+                } catch (error) {
+                    console.error('Error adding user:', error);
+                    showModal('Failed to add user.');
+                }
+            });
+
+            // Logout listeners for both dashboards
             logoutButton.addEventListener('click', () => {
                 loginSection.classList.remove('hidden');
                 dashboard.classList.add('hidden');
+            });
+            adminLogoutButton.addEventListener('click', () => {
+                loginSection.classList.remove('hidden');
+                adminDashboardLayout.style.display = 'none';
+            });
+
+            // Menu button listeners
+            Object.keys(menuButtons).forEach(pageId => {
+                menuButtons[pageId].addEventListener('click', () => showPage(pageId));
             });
         });
     </script>
 </body>
 </html>
+
