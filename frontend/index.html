@@ -6,427 +6,315 @@
     <title>Employee Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #f0f4f8;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase configuration and initialization
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        let userId = null;
+        let userRole = 'employee';
+        
+        // UI elements
+        const loginSection = document.getElementById('login-section');
+        const employeeDashboard = document.getElementById('employee-dashboard');
+        const adminDashboardLayout = document.getElementById('admin-dashboard-layout');
+        const userEmailSpan = document.getElementById('user-email');
+        const userRoleSpan = document.getElementById('user-role');
+        const logoutButton = document.getElementById('logout-button');
+        const adminLogoutButton = document.getElementById('admin-logout-button');
+        const addUserForm = document.getElementById('add-user-form');
+        const usersTableBody = document.getElementById('users-table-body');
+        const messageModal = document.getElementById('message-modal');
+        const messageModalText = document.getElementById('message-modal-text');
+        const messageModalOkButton = document.getElementById('message-modal-ok-button');
+        const deleteConfirmModal = document.getElementById('delete-confirm-modal');
+        const confirmDeleteButton = document.getElementById('confirm-delete-button');
+        const cancelDeleteButton = document.getElementById('cancel-delete-button');
+        const editUserModal = document.getElementById('edit-user-modal');
+        const editUserForm = document.getElementById('edit-user-form');
+        const cancelEditButton = document.getElementById('cancel-edit-button');
+
+        // Pages and Menu buttons
+        const pages = {
+            'user-management': document.getElementById('user-management-page'),
+            'it-assets': document.getElementById('it-assets-page'),
+            'announcements': document.getElementById('announcements-page'),
+            'metrics': document.getElementById('metrics-page')
+        };
+        const menuButtons = {
+            'user-management': document.getElementById('menu-user-management'),
+            'it-assets': document.getElementById('menu-it-assets'),
+            'announcements': document.getElementById('menu-announcements'),
+            'metrics': document.getElementById('menu-metrics')
+        };
+
+        let userToDeleteId = null;
+
+        function showMessageModal(message) {
+            messageModalText.textContent = message;
+            messageModal.style.display = 'flex';
         }
-        .container {
-            background-color: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            padding: 2.5rem;
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-            transition: all 0.3s ease-in-out;
+
+        function hideAllModals() {
+            messageModal.style.display = 'none';
+            deleteConfirmModal.style.display = 'none';
+            editUserModal.style.display = 'none';
         }
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 10;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.4);
-            justify-content: center;
-            align-items: center;
-        }
-        .modal-content {
-            background-color: #fefefe;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            text-align: center;
-        }
-        .modal-button {
-            background-color: #4f46e5;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        #admin-table-container {
-            max-height: 400px;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch; /* for smooth scrolling on iOS */
-        }
-        /* New styles for the admin dashboard layout */
-        .admin-layout {
-            display: none;
-            width: 100%;
-            min-height: 100vh;
-            background-color: #f0f4f8;
-        }
-        @media (min-width: 768px) {
-            .admin-layout {
-                display: grid;
-                grid-template-columns: 250px 1fr;
+
+        // Display the correct UI based on user's authentication state
+        function displayUI(user, role) {
+            loginSection.classList.add('hidden');
+            if (role === 'admin') {
+                userRole = 'admin';
+                userEmailSpan.textContent = user.email;
+                userRoleSpan.textContent = userRole;
+                adminDashboardLayout.style.display = 'grid';
+                showPage('user-management');
+            } else {
+                userRole = 'employee';
+                userEmailSpan.textContent = user.email;
+                userRoleSpan.textContent = userRole;
+                employeeDashboard.classList.remove('hidden');
             }
         }
-        .admin-sidebar {
-            background-color: #1a202c;
-            color: #e2e8f0;
-            padding: 2rem 1.5rem;
-            box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
-        }
-        .sidebar-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            width: 100%;
-            text-align: left;
-            padding: 0.75rem 1rem;
-            margin-bottom: 0.5rem;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: background-color 0.2s ease-in-out;
-        }
-        .sidebar-item:hover {
-            background-color: #2d3748;
-        }
-        .sidebar-item.active {
-            background-color: #4c51bf;
-            color: #ffffff;
-        }
-        .admin-content {
-            padding: 2rem;
-            background-color: #ffffff;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
-            border-radius: 12px;
-            margin: 1rem;
-        }
-    </style>
-</head>
-<body class="bg-gray-100">
 
-    <!-- Login section -->
-    <div id="login-section" class="container mx-auto p-8 rounded-lg shadow-xl bg-white">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6">Employee Portal</h1>
-        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Login</h2>
-        <form id="login-form" class="space-y-4">
-            <div>
-                <input type="email" id="email" placeholder="Email" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-            </div>
-            <div>
-                <input type="password" id="password" placeholder="Password" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-            </div>
-            <button type="submit" class="w-full p-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors duration-200">
-                Login
-            </button>
-        </form>
-    </div>
-
-    <!-- Employee Dashboard section (for non-admin users) -->
-    <div id="employee-dashboard" class="hidden container mx-auto p-8 rounded-lg shadow-xl bg-white">
-        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Welcome, <span id="user-email"></span></h2>
-        <p class="text-gray-600">You are logged in with a <span id="user-role" class="font-bold"></span> account.</p>
-        <button id="logout-button" class="mt-4 p-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors duration-200">
-            Logout
-        </button>
-    </div>
-
-    <!-- Admin Dashboard section with new layout -->
-    <div id="admin-dashboard-layout" class="admin-layout">
-        <!-- Left Sidebar -->
-        <div class="admin-sidebar">
-            <h1 class="text-xl font-bold mb-8">Admin Menu</h1>
-            <nav>
-                <button id="menu-user-management" class="sidebar-item active">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users-2"><path d="M14 19a6 6 0 0 0-12 0"/><circle cx="8" cy="9" r="4"/><path d="M22 19a6 6 0 0 0-6-6 6 6 0 0 0-1.07 1.07M19 19v-6m-3 3h6"/></svg>
-                    User Management
-                </button>
-                <button id="menu-it-assets" class="sidebar-item">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-laptop-2"><rect width="20" height="12" x="2" y="6" rx="2" ry="2"/><path d="M6 18h12"/></svg>
-                    IT Assets
-                </button>
-                <button id="menu-announcements" class="sidebar-item">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-megaphone"><path d="m3 11 18-3v8L3 16V11z"/><path d="M12 21.5V16"/><path d="M12 8V2.5"/><path d="M20 7c-1.2 0-2.4 0.6-3.2 1.4"/><path d="M4 8.4C5.2 7.6 6.4 7 7.6 7"/></svg>
-                    Announcements
-                </button>
-                <button id="menu-metrics" class="sidebar-item">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bar-chart-2"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>
-                    Metrics
-                </button>
-            </nav>
-            <button id="admin-logout-button" class="sidebar-item mt-8 bg-red-600 hover:bg-red-700">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-log-out"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-                Logout
-            </button>
-        </div>
-
-        <!-- Main Content Area -->
-        <div class="admin-content-area p-8">
-            <h1 class="text-3xl font-bold text-gray-800 mb-6">Admin Dashboard</h1>
-
-            <!-- User Management Page -->
-            <div id="user-management-page" class="admin-content">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">User Management</h2>
-                <p class="text-gray-600 mb-4">Manage users below.</p>
-
-                <form id="add-user-form" class="space-y-4 mb-8">
-                    <h3 class="text-xl font-semibold text-gray-700">Add New User</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <input type="email" id="new-user-email" placeholder="Email" class="p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                        <input type="password" id="new-user-password" placeholder="Password" class="p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <label class="text-gray-700">Role:</label>
-                        <select id="new-user-role" class="p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option value="employee">Employee</option>
-                            <option value="admin">Admin</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="w-full p-3 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors duration-200">
-                        Add User
-                    </button>
-                </form>
-
-                <h3 class="text-xl font-semibold text-gray-700 mb-4">Existing Users</h3>
-                <div id="admin-table-container" class="border border-gray-200 rounded-lg shadow-inner">
-                    <table id="users-table" class="min-w-full bg-white">
-                        <thead class="sticky top-0 bg-gray-50 z-10">
-                            <tr>
-                                <th class="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-600">Email</th>
-                                <th class="py-2 px-4 border-b border-gray-200 text-left text-sm font-semibold text-gray-600">Role</th>
-                                <th class="py-2 px-4 border-b border-gray-200 text-right text-sm font-semibold text-gray-600">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="users-table-body">
-                            <!-- User rows will be inserted here by JavaScript -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- IT Assets Page -->
-            <div id="it-assets-page" class="admin-content hidden">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">IT Assets Management</h2>
-                <p class="text-gray-600">This section will contain tools for managing IT assets, such as laptops, monitors, and software licenses. It is under construction.</p>
-                <div class="mt-8 p-4 bg-gray-100 rounded-lg text-center">
-                    <span class="text-5xl" role="img" aria-label="Tools">🛠️</span>
-                </div>
-            </div>
-
-            <!-- Announcements Page -->
-            <div id="announcements-page" class="admin-content hidden">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Announcements</h2>
-                <p class="text-gray-600">Here you can create, edit, and publish announcements for all employees. It is under construction.</p>
-                <div class="mt-8 p-4 bg-gray-100 rounded-lg text-center">
-                    <span class="text-5xl" role="img" aria-label="Megaphone">📢</span>
-                </div>
-            </div>
-
-            <!-- Metrics Page -->
-            <div id="metrics-page" class="admin-content hidden">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">System Metrics</h2>
-                <p class="text-gray-600">This page will display key system metrics and analytics. It is under construction.</p>
-                <div class="mt-8 p-4 bg-gray-100 rounded-lg text-center">
-                    <span class="text-5xl" role="img" aria-label="Chart">📈</span>
-                </div>
-            </div>
-
-        </div>
-    </div>
-    
-    <!-- Modal for custom messages -->
-    <div id="custom-modal" class="modal">
-      <div class="modal-content">
-        <p id="modal-message" class="text-lg font-medium"></p>
-        <button id="modal-ok-button" class="modal-button">OK</button>
-      </div>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const loginForm = document.getElementById('login-form');
-            const dashboard = document.getElementById('employee-dashboard');
-            const adminDashboardLayout = document.getElementById('admin-dashboard-layout');
-            const loginSection = document.getElementById('login-section');
-            const userEmailSpan = document.getElementById('user-email');
-            const userRoleSpan = document.getElementById('user-role');
-            const logoutButton = document.getElementById('logout-button');
-            const adminLogoutButton = document.getElementById('admin-logout-button');
-            const addUserForm = document.getElementById('add-user-form');
-            const usersTableBody = document.getElementById('users-table-body');
-            const modal = document.getElementById('custom-modal');
-            const modalMessage = document.getElementById('modal-message');
-            const modalOkButton = document.getElementById('modal-ok-button');
-
-            // Pages and Menu buttons
-            const pages = {
-                'user-management': document.getElementById('user-management-page'),
-                'it-assets': document.getElementById('it-assets-page'),
-                'announcements': document.getElementById('announcements-page'),
-                'metrics': document.getElementById('metrics-page')
-            };
-            const menuButtons = {
-                'user-management': document.getElementById('menu-user-management'),
-                'it-assets': document.getElementById('menu-it-assets'),
-                'announcements': document.getElementById('menu-announcements'),
-                'metrics': document.getElementById('menu-metrics')
-            };
-
-            const API_BASE_URL = '/api';
-
-            function showModal(message) {
-                modalMessage.textContent = message;
-                modal.style.display = 'flex';
-            }
-
-            modalOkButton.onclick = function() {
-                modal.style.display = 'none';
-            };
-            
-            function showPage(pageId) {
-                // Hide all pages and remove active class from all menu buttons
-                Object.values(pages).forEach(page => page.classList.add('hidden'));
-                Object.values(menuButtons).forEach(button => button.classList.remove('active'));
-
-                // Show the selected page and add active class to its button
-                pages[pageId].classList.remove('hidden');
-                menuButtons[pageId].classList.add('active');
-
-                // If it's the user management page, render the users
-                if (pageId === 'user-management') {
-                    renderUsers();
-                }
-            }
-
-            async function renderUsers() {
+        // Handle delete confirmation
+        confirmDeleteButton.onclick = async () => {
+            if (userToDeleteId) {
                 try {
-                    const response = await fetch(`${API_BASE_URL}/users?role=admin`);
-                    const users = await response.json();
-                    
-                    if (response.ok) {
-                        usersTableBody.innerHTML = '';
-                        users.forEach(user => {
-                            const row = document.createElement('tr');
-                            row.className = 'border-b border-gray-100 last:border-b-0';
-                            row.innerHTML = `
-                                <td class="py-3 px-4 text-sm text-gray-800">${user.email}</td>
-                                <td class="py-3 px-4 text-sm text-gray-800 capitalize">${user.role}</td>
-                                <td class="py-3 px-4 text-sm text-right">
-                                    <button class="delete-user-btn p-1 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-200" data-user-id="${user.id}">
-                                        Delete
-                                    </button>
-                                </td>
-                            `;
-                            usersTableBody.appendChild(row);
-                        });
-
-                        document.querySelectorAll('.delete-user-btn').forEach(button => {
-                            button.addEventListener('click', handleDeleteUser);
-                        });
-                    } else {
-                        showModal(users.message || 'Failed to fetch users.');
-                    }
-                } catch (error) {
-                    console.error('Error fetching users:', error);
-                    showModal('Failed to fetch users. Server may be down.');
-                }
-            }
-
-            async function handleDeleteUser(e) {
-                const userId = e.target.dataset.userId;
-                try {
-                    const response = await fetch(`${API_BASE_URL}/users/${userId}?role=admin`, {
-                        method: 'DELETE',
-                    });
-                    const data = await response.json();
-                    showModal(data.message);
-                    if (response.ok) {
-                        renderUsers(); // Refresh the user list
-                    }
+                    await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/employees`, userToDeleteId));
+                    showMessageModal('User deleted successfully.');
                 } catch (error) {
                     console.error('Error deleting user:', error);
-                    showModal('Failed to delete user.');
+                    showMessageModal('Failed to delete user.');
+                } finally {
+                    userToDeleteId = null;
+                    hideAllModals();
                 }
             }
+        };
+
+        // Render users from Firestore
+        function renderUsers(users) {
+            usersTableBody.innerHTML = '';
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-100 last:border-b-0';
+                row.innerHTML = `
+                    <td class="py-3 px-4 text-sm text-gray-800">${user.firstName || ''}</td>
+                    <td class="py-3 px-4 text-sm text-gray-800">${user.lastName || ''}</td>
+                    <td class="py-3 px-4 text-sm text-gray-800">${user.empId || ''}</td>
+                    <td class="py-3 px-4 text-sm text-gray-800">${user.designation || ''}</td>
+                    <td class="py-3 px-4 text-sm text-gray-800">${user.email}</td>
+                    <td class="py-3 px-4 text-sm text-gray-800 capitalize">${user.role}</td>
+                    <td class="py-3 px-4 text-sm text-right flex gap-2 justify-end">
+                        <button class="edit-user-btn p-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-200" data-user-id="${user.id}">
+                            Edit
+                        </button>
+                        <button class="delete-user-btn p-1 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-200" data-user-id="${user.id}">
+                            Delete
+                        </button>
+                    </td>
+                `;
+                usersTableBody.appendChild(row);
+            });
+
+            document.querySelectorAll('.delete-user-btn').forEach(button => {
+                button.addEventListener('click', handleDeleteUser);
+            });
+            document.querySelectorAll('.edit-user-btn').forEach(button => {
+                button.addEventListener('click', handleEditUser);
+            });
+        }
+
+        // Attach real-time listener to Firestore collection
+        function setupRealtimeListener() {
+            if (userRole === 'admin') {
+                const employeesRef = collection(db, `artifacts/${appId}/users/${userId}/employees`);
+                onSnapshot(employeesRef, (snapshot) => {
+                    const employees = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderUsers(employees);
+                }, (error) => {
+                    console.error("Error listening to employees collection: ", error);
+                    showMessageModal("Failed to load user data.");
+                });
+            }
+        }
+
+        // Show different dashboard pages
+        function showPage(pageId) {
+            Object.values(pages).forEach(page => page.classList.add('hidden'));
+            Object.values(menuButtons).forEach(button => button.classList.remove('active'));
+            pages[pageId].classList.remove('hidden');
+            menuButtons[pageId].classList.add('active');
+        }
+
+        // Event handlers
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
             
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('email').value;
-                const password = document.getElementById('password').value;
-
-                try {
-                    const response = await fetch(`${API_BASE_URL}/login`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ email, password }),
-                    });
-                    
-                    const data = await response.json();
-
-                    if (response.ok) {
-                        userEmailSpan.textContent = data.user.email;
-                        userRoleSpan.textContent = data.user.role;
-                        loginSection.classList.add('hidden');
-                        if (data.user.role === 'admin') {
-                            adminDashboardLayout.style.display = 'grid';
-                            showPage('user-management');
-                        } else {
-                            dashboard.classList.remove('hidden');
-                        }
-                    } else {
-                        showModal(data.message || 'Login failed: Failed to fetch');
-                    }
-                } catch (error) {
-                    console.error('Error during login:', error);
-                    showModal('Login failed: Failed to fetch');
+            try {
+                // Find user by email and password
+                const q = query(collection(db, `artifacts/${appId}/users/${userId}/employees`), where("email", "==", email), where("password", "==", password));
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    showMessageModal('Invalid email or password.');
+                    return;
                 }
-            });
 
-            addUserForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('new-user-email').value;
-                const password = document.getElementById('new-user-password').value;
-                const role = document.getElementById('new-user-role').value;
+                const userDoc = querySnapshot.docs[0];
+                const userData = userDoc.data();
+                displayUI({ email: userData.email, uid: userDoc.id }, userData.role);
 
-                try {
-                    const response = await fetch(`${API_BASE_URL}/users?role=admin`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ email, password, role }),
-                    });
-                    const data = await response.json();
-                    showModal(data.message);
-                    if (response.ok) {
-                        addUserForm.reset();
-                        renderUsers(); // Refresh the user list
-                    }
-                } catch (error) {
-                    console.error('Error adding user:', error);
-                    showModal('Failed to add user.');
+            } catch (error) {
+                console.error("Login error: ", error);
+                showMessageModal('Login failed. Please try again.');
+            }
+        });
+
+        addUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newUser = {
+                firstName: document.getElementById('new-user-first-name').value,
+                lastName: document.getElementById('new-user-last-name').value,
+                empId: document.getElementById('new-user-emp-id').value,
+                designation: document.getElementById('new-user-designation').value,
+                email: document.getElementById('new-user-email').value,
+                password: document.getElementById('new-user-password').value,
+                role: document.getElementById('new-user-role').value
+            };
+
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/users/${userId}/employees`), newUser);
+                showMessageModal('User added successfully.');
+                addUserForm.reset();
+            } catch (error) {
+                console.error("Error adding user: ", error);
+                showMessageModal('Failed to add user. Please try again.');
+            }
+        });
+
+        async function handleDeleteUser(e) {
+            userToDeleteId = e.target.dataset.userId;
+            deleteConfirmModal.style.display = 'flex';
+        }
+
+        async function handleEditUser(e) {
+            const userIdToEdit = e.target.dataset.userId;
+            const userRef = doc(db, `artifacts/${appId}/users/${userId}/employees`, userIdToEdit);
+            try {
+                const userDoc = await getDoc(userRef);
+                if (userDoc.exists()) {
+                    const user = { id: userDoc.id, ...userDoc.data() };
+                    document.getElementById('edit-user-id').value = user.id;
+                    document.getElementById('edit-first-name').value = user.firstName || '';
+                    document.getElementById('edit-last-name').value = user.lastName || '';
+                    document.getElementById('edit-emp-id').value = user.empId || '';
+                    document.getElementById('edit-designation').value = user.designation || '';
+                    document.getElementById('edit-email').value = user.email;
+                    document.getElementById('edit-role').value = user.role;
+                    editUserModal.style.display = 'flex';
+                } else {
+                    showMessageModal('User not found.');
                 }
-            });
+            } catch (error) {
+                console.error('Error fetching user for edit:', error);
+                showMessageModal('Failed to fetch user details.');
+            }
+        }
 
-            // Logout listeners for both dashboards
-            logoutButton.addEventListener('click', () => {
-                loginSection.classList.remove('hidden');
-                dashboard.classList.add('hidden');
-            });
-            adminLogoutButton.addEventListener('click', () => {
-                loginSection.classList.remove('hidden');
-                adminDashboardLayout.style.display = 'none';
-            });
+        editUserForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userIdToUpdate = document.getElementById('edit-user-id').value;
+            const updatedUser = {
+                firstName: document.getElementById('edit-first-name').value,
+                lastName: document.getElementById('edit-last-name').value,
+                empId: document.getElementById('edit-emp-id').value,
+                designation: document.getElementById('edit-designation').value,
+                email: document.getElementById('edit-email').value,
+                role: document.getElementById('edit-role').value
+            };
 
-            // Menu button listeners
-            Object.keys(menuButtons).forEach(pageId => {
-                menuButtons[pageId].addEventListener('click', () => showPage(pageId));
-            });
+            const userRef = doc(db, `artifacts/${appId}/users/${userId}/employees`, userIdToUpdate);
+            try {
+                await updateDoc(userRef, updatedUser);
+                showMessageModal('User updated successfully.');
+                hideAllModals();
+            } catch (error) {
+                console.error("Error updating user: ", error);
+                showMessageModal('Failed to update user.');
+            }
+        });
+
+        logoutButton.addEventListener('click', () => {
+            auth.signOut();
+            location.reload();
+        });
+
+        adminLogoutButton.addEventListener('click', () => {
+            auth.signOut();
+            location.reload();
+        });
+
+        Object.keys(menuButtons).forEach(pageId => {
+            menuButtons[pageId].addEventListener('click', () => showPage(pageId));
+        });
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                const userRef = doc(db, `artifacts/${appId}/users/${userId}/employees`, user.uid);
+                const userDoc = await getDoc(userRef);
+                
+                let userRole = 'employee';
+                if (userDoc.exists()) {
+                    userRole = userDoc.data().role;
+                }
+                
+                // If this is the very first time, create a default admin user
+                if (!userDoc.exists()) {
+                    const defaultAdmin = {
+                        firstName: 'Admin',
+                        lastName: 'User',
+                        empId: '001',
+                        designation: 'System Admin',
+                        email: user.email,
+                        password: 'password123',
+                        role: 'admin',
+                    };
+                    await setDoc(userRef, defaultAdmin);
+                    userRole = 'admin';
+                }
+
+                displayUI(user, userRole);
+                if (userRole === 'admin') {
+                    setupRealtimeListener();
+                }
+
+            } else {
+                const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                if (initialAuthToken) {
+                    try {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } catch (error) {
+                        console.error('Error with custom token:', error);
+                        loginSection.classList.remove('hidden');
+                    }
+                } else {
+                    console.log('No custom auth token provided, fallback to guest login.');
+                    userId = crypto.randomUUID();
+                    loginSection.classList.remove('hidden');
+                }
+            }
         });
     </script>
 </body>
