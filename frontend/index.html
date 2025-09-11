@@ -79,7 +79,9 @@
             box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
         }
         .sidebar-item {
-            display: block;
+            display: flex;
+            align-items: center;
+            gap: 12px;
             width: 100%;
             text-align: left;
             padding: 0.75rem 1rem;
@@ -138,12 +140,27 @@
         <div class="admin-sidebar">
             <h1 class="text-xl font-bold mb-8">Admin Menu</h1>
             <nav>
-                <button id="menu-user-management" class="sidebar-item active">User Management</button>
-                <button id="menu-it-assets" class="sidebar-item">IT Assets</button>
-                <button id="menu-announcements" class="sidebar-item">Announcements</button>
-                <button id="menu-metrics" class="sidebar-item">Metrics</button>
+                <button id="menu-user-management" class="sidebar-item active">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users-2"><path d="M14 19a6 6 0 0 0-12 0"/><circle cx="8" cy="9" r="4"/><path d="M22 19a6 6 0 0 0-6-6 6 6 0 0 0-1.07 1.07M19 19v-6m-3 3h6"/></svg>
+                    User Management
+                </button>
+                <button id="menu-it-assets" class="sidebar-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-laptop-2"><rect width="20" height="12" x="2" y="6" rx="2" ry="2"/><path d="M6 18h12"/></svg>
+                    IT Assets
+                </button>
+                <button id="menu-announcements" class="sidebar-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-megaphone"><path d="m3 11 18-3v8L3 16V11z"/><path d="M12 21.5V16"/><path d="M12 8V2.5"/><path d="M20 7c-1.2 0-2.4 0.6-3.2 1.4"/><path d="M4 8.4C5.2 7.6 6.4 7 7.6 7"/></svg>
+                    Announcements
+                </button>
+                <button id="menu-metrics" class="sidebar-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bar-chart-2"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>
+                    Metrics
+                </button>
             </nav>
-            <button id="admin-logout-button" class="sidebar-item mt-8 bg-red-600 hover:bg-red-700">Logout</button>
+            <button id="admin-logout-button" class="sidebar-item mt-8 bg-red-600 hover:bg-red-700">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-log-out"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                Logout
+            </button>
         </div>
 
         <!-- Main Content Area -->
