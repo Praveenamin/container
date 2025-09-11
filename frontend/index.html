@@ -400,29 +400,30 @@
         });
 
         // Login form submission
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value.trim();
-            
-            try {
-                // The userId is guaranteed to be set here due to the async setup below
-                const q = query(collection(db, `artifacts/${appId}/users/${userId}/employees`), where("email", "==", email), where("password", "==", password));
-                const querySnapshot = await getDocs(q);
+        function setupLoginFormListener() {
+            document.getElementById('login-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value.trim();
                 
-                if (querySnapshot.empty) {
-                    showMessageModal('Invalid email or password.');
-                    return;
-                }
+                try {
+                    const q = query(collection(db, `artifacts/${appId}/users/${userId}/employees`), where("email", "==", email), where("password", "==", password));
+                    const querySnapshot = await getDocs(q);
+                    
+                    if (querySnapshot.empty) {
+                        showMessageModal('Invalid email or password.');
+                        return;
+                    }
 
-                const userDoc = querySnapshot.docs[0];
-                const userData = userDoc.data();
-                displayDashboard(userData.role, { id: userDoc.id, email: userData.email, role: userData.role });
-            } catch (error) {
-                console.error("Login error: ", error);
-                showMessageModal('Login failed. Please try again.');
-            }
-        });
+                    const userDoc = querySnapshot.docs[0];
+                    const userData = userDoc.data();
+                    displayDashboard(userData.role, { id: userDoc.id, email: userData.email, role: userData.role });
+                } catch (error) {
+                    console.error("Login error: ", error);
+                    showMessageModal('Login failed. Please try again.');
+                }
+            });
+        }
 
         addUserForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -558,23 +559,26 @@
             }
         }
         
-        // Sign in anonymously immediately to get a user ID and initialize the app
-        async function setupApp() {
-            try {
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                userId = auth.currentUser.uid;
+        // Main auth state listener
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
                 await initializeAdminUser(userId);
-            } catch (error) {
-                console.error("App setup failed:", error);
-                showMessageModal("Failed to initialize the portal. Please try again.");
+                setupLoginFormListener();
+            } else {
+                userId = null;
             }
-        }
+        });
         
-        setupApp();
+        // Initial sign-in
+        if (initialAuthToken) {
+            signInWithCustomToken(auth, initialAuthToken).catch(error => {
+                console.error('Error with custom token:', error);
+                signInAnonymously(auth).catch(anonError => console.error('Anonymous sign-in failed:', anonError));
+            });
+        } else {
+             signInAnonymously(auth).catch(anonError => console.error('Anonymous sign-in failed:', anonError));
+        }
     </script>
 </body>
 </html>
