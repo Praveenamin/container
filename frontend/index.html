@@ -324,39 +324,23 @@
                 menuButtons[pageId].classList.add('active');
             }
         }
-
-        async function checkAndDisplayDashboard(user) {
-            if (!user) {
-                console.error("User object is null or undefined.");
-                return;
-            }
-            try {
-                const employeesRef = collection(db, `artifacts/${appId}/users/${userId}/employees`);
-                const q = query(employeesRef, where("email", "==", user.email));
-                const querySnapshot = await getDocs(q);
-
-                if (querySnapshot.empty) {
-                    console.error("User data not found in employees collection.");
-                    return;
-                }
-
-                const userData = querySnapshot.docs[0].data();
-                if (userData.role === 'admin') {
-                    employeeDashboard.classList.add('hidden');
-                    adminDashboardLayout.classList.remove('hidden');
-                    userEmailAdminSpan.textContent = user.email;
-                    userRoleAdminSpan.textContent = userData.role;
-                    showPage('user-management');
-                    setupRealtimeListener(userId);
-                } else {
-                    adminDashboardLayout.classList.add('hidden');
-                    employeeDashboard.classList.remove('hidden');
-                    userEmailEmployeeSpan.textContent = user.email;
-                    userRoleEmployeeSpan.textContent = userData.role;
-                }
-            } catch (error) {
-                console.error("Error fetching user role:", error);
-                showMessageModal("Failed to load user dashboard.");
+        
+        // Display the correct dashboard based on user role
+        function displayDashboard(role, user) {
+            loadingScreen.classList.add('hidden');
+            loginSection.classList.add('hidden');
+            if (role === 'admin') {
+                employeeDashboard.classList.add('hidden');
+                adminDashboardLayout.classList.remove('hidden');
+                userEmailAdminSpan.textContent = user.email;
+                userRoleAdminSpan.textContent = user.role;
+                showPage('user-management');
+                setupRealtimeListener(user.id);
+            } else {
+                adminDashboardLayout.classList.add('hidden');
+                employeeDashboard.classList.remove('hidden');
+                userEmailEmployeeSpan.textContent = user.email;
+                userRoleEmployeeSpan.textContent = user.role;
             }
         }
         
@@ -438,8 +422,9 @@
                     return;
                 }
 
-                const userData = querySnapshot.docs[0].data();
-                displayDashboard(userData.role, { id: querySnapshot.docs[0].id, email: userData.email, role: userData.role });
+                const userDoc = querySnapshot.docs[0];
+                const userData = userDoc.data();
+                displayDashboard(userData.role, { id: userDoc.id, email: userData.email, role: userData.role });
             } catch (error) {
                 console.error("Login error: ", error);
                 showMessageModal('Login failed. Please try again.');
@@ -551,39 +536,55 @@
           signOut(auth);
           location.reload();
         });
+
+        // This function sets up the default admin user if the collection is empty.
+        // It is called once after the app starts.
+        async function initializeAdminUser(currentUserId) {
+            if (!currentUserId) return;
+            try {
+                const employeesCollectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/employees`);
+                const q = query(employeesCollectionRef);
+                const snapshot = await getDocs(q);
+
+                if (snapshot.empty) {
+                    const adminDocRef = doc(employeesCollectionRef);
+                    await setDoc(adminDocRef, {
+                        firstName: 'Praveen',
+                        lastName: 'B',
+                        empId: 'A001',
+                        designation: 'Admin',
+                        email: 'praveen.b@assistanz.com',
+                        password: 'password123',
+                        role: 'admin'
+                    });
+                    console.log("Default admin user created.");
+                } else {
+                    console.log("Employee collection already exists. Skipping default admin creation.");
+                }
+            } catch (error) {
+                console.error('Error initializing admin user:', error);
+            }
+        }
         
-        // Main auth state listener
+        // Main authentication state listener
         onAuthStateChanged(auth, async (user) => {
+            // Immediately hide loading and show the login section
             loadingScreen.classList.add('hidden');
             loginSection.classList.remove('hidden');
 
             if (user) {
                 userId = user.uid;
-                const employeesCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/employees`);
-                
-                try {
-                    // This transaction ensures the admin user is created only on the very first run
-                    await runTransaction(db, async (transaction) => {
-                        const q = query(employeesCollectionRef);
-                        const snapshot = await getDocs(q);
-                        
-                        if (snapshot.empty) {
-                            // This is the first run, so create the admin user
-                            const adminDocRef = doc(employeesCollectionRef);
-                            transaction.set(adminDocRef, {
-                                firstName: 'Praveen',
-                                lastName: 'B',
-                                empId: 'A001',
-                                designation: 'Admin',
-                                email: 'praveen.b@assistanz.com',
-                                password: 'password123',
-                                role: 'admin'
-                            });
-                            console.log("Default admin user created.");
-                        }
-                    });
-                } catch (error) {
-                    console.error('Error during initial setup:', error);
+                // Once authenticated, run the one-time setup
+                await initializeAdminUser(userId);
+            } else {
+                // If not authenticated, try to sign in with the custom token
+                if (initialAuthToken) {
+                    try {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } catch (error) {
+                        console.error('Error with custom token:', error);
+                        // The UI is already showing the login form, so no need to do anything else.
+                    }
                 }
             }
         });
