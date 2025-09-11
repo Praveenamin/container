@@ -15,14 +15,8 @@
 </head>
 <body class="bg-gray-50 text-gray-800 flex flex-col min-h-screen">
 
-    <!-- Loading Screen -->
-    <div id="loading-screen" class="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center z-50 transition-opacity duration-500">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
-        <p class="mt-4 text-gray-600 font-medium">Setting up your portal. Please wait...</p>
-    </div>
-
-    <!-- Login Section -->
-    <div id="login-section" class="flex items-center justify-center h-screen px-4 hidden">
+    <!-- Login Section - This is now the default view -->
+    <div id="login-section" class="flex items-center justify-center h-screen px-4">
         <div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-sm">
             <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Employee Portal</h2>
             <form id="login-form" class="space-y-4">
@@ -43,7 +37,7 @@
             </form>
         </div>
     </div>
-
+    
     <!-- Employee Dashboard (initially hidden) -->
     <div id="employee-dashboard" class="flex flex-col flex-grow hidden">
         <header class="bg-gray-800 text-white p-4 flex justify-between items-center shadow-md">
@@ -232,10 +226,16 @@
             </form>
         </div>
     </div>
+
+    <!-- Hidden Loading Screen -->
+    <div id="loading-screen" class="fixed inset-0 bg-gray-50 flex flex-col items-center justify-center z-50 transition-opacity duration-500 hidden">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+        <p class="mt-4 text-gray-600 font-medium">Setting up your portal. Please wait...</p>
+    </div>
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithCustomToken, onAuthStateChanged, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // Debugging utility
@@ -260,7 +260,6 @@
         let userId = null;
         
         // UI elements
-        const loadingScreen = document.getElementById('loading-screen');
         const loginSection = document.getElementById('login-section');
         const employeeDashboard = document.getElementById('employee-dashboard');
         const adminDashboardLayout = document.getElementById('admin-dashboard-layout');
@@ -327,7 +326,6 @@
         
         // Display the correct dashboard based on user role
         function displayDashboard(role, user) {
-            loadingScreen.classList.add('hidden');
             loginSection.classList.add('hidden');
             if (role === 'admin') {
                 employeeDashboard.classList.add('hidden');
@@ -538,7 +536,6 @@
         });
 
         // This function sets up the default admin user if the collection is empty.
-        // It is called once after the app starts.
         async function initializeAdminUser(currentUserId) {
             if (!currentUserId) return;
             try {
@@ -566,26 +563,23 @@
             }
         }
         
-        // Main authentication state listener
+        // Initial authentication check
+        if (initialAuthToken) {
+            signInWithCustomToken(auth, initialAuthToken).catch(error => {
+                console.error('Error with custom token:', error);
+                // Fallback to anonymous sign-in if custom token fails
+                signInAnonymously(auth).catch(anonError => console.error('Anonymous sign-in failed:', anonError));
+            });
+        } else {
+             signInAnonymously(auth).catch(anonError => console.error('Anonymous sign-in failed:', anonError));
+        }
+        
+        // Main auth state listener
         onAuthStateChanged(auth, async (user) => {
-            // Immediately hide loading and show the login section
-            loadingScreen.classList.add('hidden');
-            loginSection.classList.remove('hidden');
-
             if (user) {
                 userId = user.uid;
                 // Once authenticated, run the one-time setup
                 await initializeAdminUser(userId);
-            } else {
-                // If not authenticated, try to sign in with the custom token
-                if (initialAuthToken) {
-                    try {
-                        await signInWithCustomToken(auth, initialAuthToken);
-                    } catch (error) {
-                        console.error('Error with custom token:', error);
-                        // The UI is already showing the login form, so no need to do anything else.
-                    }
-                }
             }
         });
     </script>
