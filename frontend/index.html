@@ -110,7 +110,14 @@
         // Initialize Firebase
         function initializeFirebase() {
             try {
-                // The initializeApp function will now automatically handle cases where firebaseConfig is empty
+                if (!firebaseConfig || !firebaseConfig.apiKey) {
+                    const errorMsg = "Firebase configuration is missing or invalid. Please ensure apiKey is present.";
+                    console.error(errorMsg);
+                    statusMessage.textContent = `Error: ${errorMsg}`;
+                    showMessage(`Error: ${errorMsg}`);
+                    // Early return to prevent app from crashing
+                    return;
+                }
                 app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
