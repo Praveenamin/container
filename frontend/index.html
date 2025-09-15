@@ -77,6 +77,19 @@
     </div>
 
     <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // IMPORTANT: These variables are provided by the canvas environment.
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : '';
+        
+        // Firestore and Auth instances
+        let app, db, auth;
+
         // UI elements
         const loadingScreen = document.getElementById('loading-screen');
         const mainContent = document.getElementById('main-content');
@@ -93,15 +106,92 @@
                 messageBox.style.display = 'none';
             }, 3000);
         }
+        
+        // Initialize Firebase services
+        function initializeFirebase() {
+            try {
+                if (!firebaseConfig || !firebaseConfig.apiKey) {
+                    const errorMsg = "Firebase configuration is missing. Please ensure apiKey is present.";
+                    console.error(errorMsg);
+                    statusMessage.textContent = `Error: ${errorMsg}`;
+                    loadingScreen.classList.remove('hidden');
+                    return false;
+                }
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                setLogLevel('debug');
+                return true;
+            } catch (error) {
+                console.error("Error initializing Firebase:", error);
+                statusMessage.textContent = `Error: ${error.message}`;
+                return false;
+            }
+        }
+        
+        // Ensure the default admin user exists
+        async function initializeAdminUser(userId) {
+            const adminDocRef = doc(db, 'artifacts', appId, 'users', userId, 'data', 'admin');
+            try {
+                const adminDoc = await getDoc(adminDocRef);
+                if (!adminDoc.exists()) {
+                    console.log("Creating default admin user.");
+                    await setDoc(adminDocRef, {
+                        email: 'praveen.b@assistanz.com',
+                        password: 'password123',
+                        role: 'admin'
+                    });
+                    console.log("Default admin user created successfully.");
+                } else {
+                    console.log("Admin user already exists.");
+                }
+            } catch (error) {
+                console.error("Error initializing admin user:", error);
+                throw error;
+            }
+        }
 
         // Main app initialization
         async function startApp() {
-            // For now, we will bypass the Firebase initialization and simply
-            // show the main content to get past the loading issue.
-            loadingScreen.classList.add('hidden');
-            mainContent.classList.remove('hidden');
-            userInfo.textContent = `User ID: Not authenticated (Firebase is not initialized)`;
-            showMessage("App is ready!");
+            if (!initializeFirebase()) {
+                return;
+            }
+            
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    const userId = user.uid;
+                    console.log("User authenticated:", userId);
+                    statusMessage.textContent = "Authenticated successfully!";
+                    
+                    try {
+                        await initializeAdminUser(userId);
+
+                        // Show the main content and hide the loading screen
+                        loadingScreen.classList.add('hidden');
+                        mainContent.classList.remove('hidden');
+                        userInfo.textContent = `User ID: ${userId}`;
+                        showMessage("App is ready!");
+                        
+                    } catch (error) {
+                        console.error("Initialization failed:", error);
+                        statusMessage.textContent = `Initialization failed: ${error.message}`;
+                        showMessage(`Initialization failed: ${error.message}`);
+                    }
+                    
+                } else {
+                    console.log("No user signed in. Attempting to authenticate...");
+                    try {
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (error) {
+                        console.error("Authentication failed:", error);
+                        statusMessage.textContent = `Authentication failed: ${error.message}`;
+                    }
+                }
+            });
         }
 
         // Run the initialization sequence
