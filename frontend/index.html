@@ -562,35 +562,39 @@
             }
         }
         
-        // Main authentication state listener
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                // A user is signed in (either from a custom token or anonymously)
-                userId = user.uid;
+        // Main initialization function
+        async function initializeApplication() {
+            try {
+                // Step 1: Sign in anonymously or with custom token
+                let currentUser = auth.currentUser;
+                if (!currentUser) {
+                    if (initialAuthToken) {
+                        currentUser = (await signInWithCustomToken(auth, initialAuthToken)).user;
+                    } else {
+                        currentUser = (await signInAnonymously(auth)).user;
+                    }
+                }
+                
+                userId = currentUser.uid;
                 console.log(`User is authenticated with ID: ${userId}`);
 
-                // Ensure the admin user is initialized before allowing login
+                // Step 2: Ensure the admin user exists
                 await initializeAdminUser(userId);
                 
-                // Hide loading message and show the login form
+                // Step 3: Show the login form and hide the loading message
                 loginLoading.classList.add('hidden');
                 loginForm.classList.remove('hidden');
                 loginButton.disabled = false;
                 setupLoginFormListener();
-            } else {
-                // No user is signed in, so we attempt to sign them in.
-                console.log("No user signed in. Attempting to sign in with custom token or anonymously.");
-                if (initialAuthToken) {
-                    signInWithCustomToken(auth, initialAuthToken).catch(error => {
-                        console.error('Error with custom token:', error);
-                        // Fallback to anonymous sign-in if custom token fails
-                        signInAnonymously(auth).catch(anonError => console.error('Anonymous sign-in failed:', anonError));
-                    });
-                } else {
-                    signInAnonymously(auth).catch(anonError => console.error('Anonymous sign-in failed:', anonError));
-                }
+
+            } catch (error) {
+                console.error("Initialization failed: ", error);
+                showMessageModal("Failed to initialize the application. Please refresh and try again.");
             }
-        });
+        }
+
+        // Start the initialization process
+        initializeApplication();
     </script>
 </body>
 </html>
