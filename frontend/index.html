@@ -562,39 +562,38 @@
             }
         }
         
-        // Main initialization function
-        async function initializeApplication() {
+        // Main application logic, triggered by authentication state changes
+        onAuthStateChanged(auth, async (user) => {
             try {
-                // Step 1: Sign in anonymously or with custom token
-                let currentUser = auth.currentUser;
-                if (!currentUser) {
+                if (user) {
+                    // User is signed in.
+                    userId = user.uid;
+                    console.log(`User is authenticated with ID: ${userId}`);
+
+                    // Ensure the admin user exists
+                    await initializeAdminUser(userId);
+
+                    // Show login form after all initialization is complete
+                    loginLoading.classList.add('hidden');
+                    loginForm.classList.remove('hidden');
+                    loginButton.disabled = false;
+                    setupLoginFormListener();
+
+                } else {
+                    // User is signed out, try to sign in
                     if (initialAuthToken) {
-                        currentUser = (await signInWithCustomToken(auth, initialAuthToken)).user;
+                        await signInWithCustomToken(auth, initialAuthToken);
                     } else {
-                        currentUser = (await signInAnonymously(auth)).user;
+                        await signInAnonymously(auth);
                     }
                 }
-                
-                userId = currentUser.uid;
-                console.log(`User is authenticated with ID: ${userId}`);
-
-                // Step 2: Ensure the admin user exists
-                await initializeAdminUser(userId);
-                
-                // Step 3: Show the login form and hide the loading message
-                loginLoading.classList.add('hidden');
-                loginForm.classList.remove('hidden');
-                loginButton.disabled = false;
-                setupLoginFormListener();
-
             } catch (error) {
                 console.error("Initialization failed: ", error);
+                loginLoading.classList.add('hidden');
+                loginForm.classList.remove('hidden');
                 showMessageModal("Failed to initialize the application. Please refresh and try again.");
             }
-        }
-
-        // Start the initialization process
-        initializeApplication();
+        });
     </script>
 </body>
 </html>
