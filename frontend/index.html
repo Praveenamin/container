@@ -137,11 +137,48 @@
                 </div>
             </div>
 
-            <!-- IT Assets Page (Placeholder) -->
+            <!-- IT Assets Page -->
             <div id="it-assets-page" class="hidden page">
                 <h1 class="text-3xl font-bold text-gray-800 mb-6">IT Assets</h1>
-                <div class="bg-white p-6 rounded-xl shadow-lg">
-                    <p class="text-gray-600">Content for IT Assets will go here.</p>
+                
+                <!-- Add Asset Form -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg mb-8">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Add New Asset</h2>
+                    <form id="add-asset-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <input type="text" id="new-asset-name" placeholder="Asset Name" required
+                               class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        <input type="text" id="new-asset-type" placeholder="Asset Type" required
+                               class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        <input type="text" id="new-asset-serial" placeholder="Serial Number" required
+                               class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        <input type="text" id="new-asset-assigned-to" placeholder="Assigned To (Emp ID)" required
+                               class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        <button type="submit"
+                                class="col-span-1 md:col-span-2 lg:col-span-3 py-2 px-4 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200">
+                            Add Asset
+                        </button>
+                    </form>
+                </div>
+
+                <!-- IT Assets List -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Asset List (<span id="asset-count">0</span>)</h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white rounded-lg">
+                            <thead>
+                                <tr class="bg-gray-100 text-left text-gray-600 uppercase text-sm leading-normal">
+                                    <th class="py-3 px-4">Asset Name</th>
+                                    <th class="py-3 px-4">Type</th>
+                                    <th class="py-3 px-4">Serial Number</th>
+                                    <th class="py-3 px-4">Assigned To</th>
+                                    <th class="py-3 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="assets-table-body" class="text-gray-700 text-sm">
+                                <!-- Asset rows will be dynamically inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -186,7 +223,7 @@
             </div>
         </div>
     </div>
-
+    
     <div id="edit-user-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden items-center justify-center z-50">
         <div class="relative p-8 bg-white w-full max-w-lg m-auto flex-col flex rounded-xl shadow-lg">
             <h3 class="text-xl font-bold text-gray-800 mb-4">Edit Employee</h3>
@@ -224,6 +261,48 @@
                     <button type="button" id="cancel-edit-button" class="py-2 px-4 bg-gray-400 text-white rounded-lg hover:bg-gray-500">Cancel</button>
                 </div>
             </form>
+        </div>
+    </div>
+    
+    <div id="edit-asset-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden items-center justify-center z-50">
+        <div class="relative p-8 bg-white w-full max-w-lg m-auto flex-col flex rounded-xl shadow-lg">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Edit Asset</h3>
+            <form id="edit-asset-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="hidden" id="edit-asset-id">
+                <div>
+                    <label for="edit-asset-name" class="block text-sm font-medium text-gray-700">Asset Name</label>
+                    <input type="text" id="edit-asset-name" class="mt-1 block w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div>
+                    <label for="edit-asset-type" class="block text-sm font-medium text-gray-700">Asset Type</label>
+                    <input type="text" id="edit-asset-type" class="mt-1 block w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div>
+                    <label for="edit-asset-serial" class="block text-sm font-medium text-gray-700">Serial Number</label>
+                    <input type="text" id="edit-asset-serial" class="mt-1 block w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div>
+                    <label for="edit-asset-assigned-to" class="block text-sm font-medium text-gray-700">Assigned To (Emp ID)</label>
+                    <input type="text" id="edit-asset-assigned-to" class="mt-1 block w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div class="flex justify-end space-x-4 mt-4 md:col-span-2">
+                    <button type="submit" class="py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Update</button>
+                    <button type="button" id="cancel-edit-asset-button" class="py-2 px-4 bg-gray-400 text-white rounded-lg hover:bg-gray-500">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="delete-asset-confirm-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden items-center justify-center z-50">
+        <div class="relative p-6 bg-white w-96 max-w-sm m-auto flex-col flex rounded-xl shadow-lg">
+            <div class="text-center">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">Confirm Deletion</h3>
+                <p class="text-sm text-gray-600 mb-4">Are you sure you want to delete this asset?</p>
+                <div class="flex justify-center gap-4">
+                    <button id="confirm-delete-asset-button" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200">Delete</button>
+                    <button id="cancel-delete-asset-button" class="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500 transition-colors duration-200">Cancel</button>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -278,6 +357,17 @@
         const editUserModal = document.getElementById('edit-user-modal');
         const editUserForm = document.getElementById('edit-user-form');
         const cancelEditButton = document.getElementById('cancel-edit-button');
+        
+        // IT Asset UI elements
+        const addAssetForm = document.getElementById('add-asset-form');
+        const assetsTableBody = document.getElementById('assets-table-body');
+        const assetCountSpan = document.getElementById('asset-count');
+        const editAssetModal = document.getElementById('edit-asset-modal');
+        const editAssetForm = document.getElementById('edit-asset-form');
+        const cancelEditAssetButton = document.getElementById('cancel-edit-asset-button');
+        const deleteAssetConfirmModal = document.getElementById('delete-asset-confirm-modal');
+        const confirmDeleteAssetButton = document.getElementById('confirm-delete-asset-button');
+        const cancelDeleteAssetButton = document.getElementById('cancel-delete-asset-button');
 
         // Pages and Menu buttons
         const pages = {
@@ -294,7 +384,9 @@
         };
 
         let userToDeleteId = null;
+        let assetToDeleteId = null;
         let employeeUnsubscribe = null;
+        let assetUnsubscribe = null;
 
         // Utility Functions for UI
         function showMessageModal(message) {
@@ -307,16 +399,30 @@
             messageModal.classList.add('hidden');
             deleteConfirmModal.classList.add('hidden');
             editUserModal.classList.add('hidden');
+            editAssetModal.classList.add('hidden');
+            deleteAssetConfirmModal.classList.add('hidden');
         }
 
         function showPage(pageId) {
+            // Unsubscribe from any previous listeners to prevent memory leaks
+            if (employeeUnsubscribe) employeeUnsubscribe();
+            if (assetUnsubscribe) assetUnsubscribe();
+            
             Object.values(pages).forEach(page => page.classList.add('hidden'));
             Object.values(menuButtons).forEach(button => button.classList.remove('active'));
+
             if (pages[pageId]) {
                 pages[pageId].classList.remove('hidden');
             }
             if (menuButtons[pageId]) {
                 menuButtons[pageId].classList.add('active');
+            }
+            
+            // Re-subscribe to the correct listener for the current page
+            if (pageId === 'user-management') {
+                setupUserRealtimeListener(userId);
+            } else if (pageId === 'it-assets') {
+                setupAssetsRealtimeListener(userId);
             }
         }
         
@@ -329,7 +435,6 @@
                 userEmailAdminSpan.textContent = user.email;
                 userRoleAdminSpan.textContent = user.role;
                 showPage('user-management');
-                setupRealtimeListener(userId);
             } else {
                 adminDashboardLayout.classList.add('hidden');
                 employeeDashboard.classList.remove('hidden');
@@ -374,12 +479,44 @@
                 button.addEventListener('click', handleEditUser);
             });
         }
+        
+        // Render assets from Firestore
+        function renderAssets(assets) {
+            assetsTableBody.innerHTML = '';
+            assetCountSpan.textContent = assets.length;
+            assets.forEach(asset => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-100 last:border-b-0 hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="py-3 px-4 text-sm text-gray-800">${asset.name || ''}</td>
+                    <td class="py-3 px-4 text-sm text-gray-800">${asset.type || ''}</td>
+                    <td class="py-3 px-4 text-sm text-gray-800">${asset.serialNumber || ''}</td>
+                    <td class="py-3 px-4 text-sm text-gray-800">${asset.assignedTo || ''}</td>
+                    <td class="py-3 px-4 text-sm text-right flex gap-2 justify-end">
+                        <button class="edit-asset-btn p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors duration-200" data-asset-id="${asset.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                            </svg>
+                        </button>
+                        <button class="delete-asset-btn p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors duration-200" data-asset-id="${asset.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </td>
+                `;
+                assetsTableBody.appendChild(row);
+            });
+            document.querySelectorAll('.delete-asset-btn').forEach(button => {
+                button.addEventListener('click', handleDeleteAsset);
+            });
+            document.querySelectorAll('.edit-asset-btn').forEach(button => {
+                button.addEventListener('click', handleEditAsset);
+            });
+        }
 
-        // Attach real-time listener to Firestore collection
-        function setupRealtimeListener(ownerId) {
-            if (employeeUnsubscribe) {
-                employeeUnsubscribe();
-            }
+        // Attach real-time listener to Firestore collections
+        function setupUserRealtimeListener(ownerId) {
             const employeesRef = collection(db, `artifacts/${appId}/users/${ownerId}/employees`);
             employeeUnsubscribe = onSnapshot(employeesRef, (snapshot) => {
                 const employees = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -389,12 +526,25 @@
                 showMessageModal("Failed to load user data.");
             });
         }
+        
+        function setupAssetsRealtimeListener(ownerId) {
+            const assetsRef = collection(db, `artifacts/${appId}/users/${ownerId}/assets`);
+            assetUnsubscribe = onSnapshot(assetsRef, (snapshot) => {
+                const assets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderAssets(assets);
+            }, (error) => {
+                console.error("Error listening to assets collection: ", error);
+                showMessageModal("Failed to load asset data.");
+            });
+        }
 
         // Event Listeners for buttons and forms
         document.addEventListener('DOMContentLoaded', () => {
             if (messageModalOkButton) messageModalOkButton.onclick = hideAllModals;
             if (cancelDeleteButton) cancelDeleteButton.onclick = hideAllModals;
             if (cancelEditButton) cancelEditButton.onclick = hideAllModals;
+            if (cancelEditAssetButton) cancelEditAssetButton.onclick = hideAllModals;
+            if (cancelDeleteAssetButton) cancelDeleteAssetButton.onclick = hideAllModals;
 
             Object.keys(menuButtons).forEach(pageId => {
                 menuButtons[pageId].addEventListener('click', () => showPage(pageId));
@@ -455,6 +605,25 @@
                 showMessageModal('Failed to add user. Please try again.');
             }
         });
+        
+        addAssetForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newAsset = {
+                name: document.getElementById('new-asset-name').value.trim(),
+                type: document.getElementById('new-asset-type').value.trim(),
+                serialNumber: document.getElementById('new-asset-serial').value.trim(),
+                assignedTo: document.getElementById('new-asset-assigned-to').value.trim()
+            };
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/users/${userId}/assets`), newAsset);
+                showMessageModal('Asset added successfully.');
+                addAssetForm.reset();
+            } catch (error) {
+                console.error("Error adding asset: ", error);
+                showMessageModal('Failed to add asset. Please try again.');
+            }
+        });
+
 
         async function handleDeleteUser(e) {
             userToDeleteId = e.target.closest('button').dataset.userId;
@@ -486,6 +655,35 @@
                 showMessageModal('Failed to fetch user details.');
             }
         }
+        
+        async function handleEditAsset(e) {
+            const assetIdToEdit = e.target.closest('button').dataset.assetId;
+            const assetRef = doc(db, `artifacts/${appId}/users/${userId}/assets`, assetIdToEdit);
+            try {
+                const assetDoc = await getDoc(assetRef);
+                if (assetDoc.exists()) {
+                    const asset = { id: assetDoc.id, ...assetDoc.data() };
+                    document.getElementById('edit-asset-id').value = asset.id;
+                    document.getElementById('edit-asset-name').value = asset.name || '';
+                    document.getElementById('edit-asset-type').value = asset.type || '';
+                    document.getElementById('edit-asset-serial').value = asset.serialNumber || '';
+                    document.getElementById('edit-asset-assigned-to').value = asset.assignedTo || '';
+                    editAssetModal.classList.remove('hidden');
+                    editAssetModal.classList.add('flex');
+                } else {
+                    showMessageModal('Asset not found.');
+                }
+            } catch (error) {
+                console.error('Error fetching asset for edit:', error);
+                showMessageModal('Failed to fetch asset details.');
+            }
+        }
+        
+        async function handleDeleteAsset(e) {
+            assetToDeleteId = e.target.closest('button').dataset.assetId;
+            deleteAssetConfirmModal.classList.remove('hidden');
+            deleteAssetConfirmModal.classList.add('flex');
+        }
 
         editUserForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -508,6 +706,26 @@
             }
         });
         
+        editAssetForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const assetIdToUpdate = document.getElementById('edit-asset-id').value;
+            const updatedAsset = {
+                name: document.getElementById('edit-asset-name').value.trim(),
+                type: document.getElementById('edit-asset-type').value.trim(),
+                serialNumber: document.getElementById('edit-asset-serial').value.trim(),
+                assignedTo: document.getElementById('edit-asset-assigned-to').value.trim()
+            };
+            const assetRef = doc(db, `artifacts/${appId}/users/${userId}/assets`, assetIdToUpdate);
+            try {
+                await updateDoc(assetRef, updatedAsset);
+                showMessageModal('Asset updated successfully.');
+                hideAllModals();
+            } catch (error) {
+                console.error("Error updating asset: ", error);
+                showMessageModal('Failed to update asset.');
+            }
+        });
+        
         // Handle delete confirmation
         confirmDeleteButton.onclick = async () => {
             if (userToDeleteId) {
@@ -519,6 +737,21 @@
                     showMessageModal('Failed to delete user.');
                 } finally {
                     userToDeleteId = null;
+                    hideAllModals();
+                }
+            }
+        };
+        
+        confirmDeleteAssetButton.onclick = async () => {
+            if (assetToDeleteId) {
+                try {
+                    await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/assets`, assetToDeleteId));
+                    showMessageModal('Asset deleted successfully.');
+                } catch (error) {
+                    console.error('Error deleting asset:', error);
+                    showMessageModal('Failed to delete asset.');
+                } finally {
+                    assetToDeleteId = null;
                     hideAllModals();
                 }
             }
