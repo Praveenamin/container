@@ -115,6 +115,8 @@
                     console.error(errorMsg);
                     statusMessage.textContent = `Error: ${errorMsg}`;
                     showMessage(`Error: ${errorMsg}`);
+                    loadingScreen.classList.remove('hidden');
+                    mainContent.classList.add('hidden');
                     return false;
                 }
                 app = initializeApp(firebaseConfig);
@@ -154,8 +156,6 @@
             console.log("Starting app initialization...");
             if (!initializeFirebase()) {
                 console.error("Firebase initialization failed, stopping app.");
-                loadingScreen.classList.remove('hidden');
-                mainContent.classList.add('hidden');
                 return;
             }
             
