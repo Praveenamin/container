@@ -19,7 +19,6 @@
     <div id="login-section" class="flex items-center justify-center h-screen px-4">
         <div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-sm">
             <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Employee Portal</h2>
-            <div id="login-loading" class="text-center text-gray-500 mb-4">Initializing...</div>
             <form id="login-form" class="space-y-4 hidden">
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
@@ -268,7 +267,6 @@
         const usersTableBody = document.getElementById('users-table-body');
         const userCountSpan = document.getElementById('user-count');
         const loginButton = document.getElementById('login-button');
-        const loginLoading = document.getElementById('login-loading');
         const loginForm = document.getElementById('login-form');
         
         const messageModal = document.getElementById('message-modal');
@@ -574,7 +572,6 @@
                     await initializeAdminUser(userId);
 
                     // Show login form after all initialization is complete
-                    loginLoading.classList.add('hidden');
                     loginForm.classList.remove('hidden');
                     loginButton.disabled = false;
                     setupLoginFormListener();
@@ -589,7 +586,6 @@
                 }
             } catch (error) {
                 console.error("Initialization failed: ", error);
-                loginLoading.classList.add('hidden');
                 loginForm.classList.remove('hidden');
                 showMessageModal("Failed to initialize the application. Please refresh and try again.");
             }
