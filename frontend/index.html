@@ -114,6 +114,7 @@
                     const errorMsg = "Firebase configuration is missing. Please ensure apiKey is present.";
                     console.error(errorMsg);
                     statusMessage.textContent = `Error: ${errorMsg}`;
+                    // Keep the loading screen and status message visible
                     loadingScreen.classList.remove('hidden');
                     return false;
                 }
