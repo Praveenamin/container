@@ -19,6 +19,9 @@
     <div id="login-section" class="flex items-center justify-center h-screen px-4">
         <div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-sm">
             <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Employee Portal</h2>
+            <!-- Initializing message shown while Firebase loads -->
+            <div id="initializing-message" class="text-center text-gray-500 mb-4">Initializing...</div>
+            
             <form id="login-form" class="space-y-4 hidden">
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
@@ -334,6 +337,7 @@
         
         // UI elements
         const loginSection = document.getElementById('login-section');
+        const initializingMessage = document.getElementById('initializing-message');
         const employeeDashboard = document.getElementById('employee-dashboard');
         const adminDashboardLayout = document.getElementById('admin-dashboard-layout');
         const userEmailEmployeeSpan = document.getElementById('user-email-employee');
@@ -797,14 +801,14 @@
         onAuthStateChanged(auth, async (user) => {
             try {
                 if (user) {
-                    // User is signed in.
                     userId = user.uid;
                     console.log(`User is authenticated with ID: ${userId}`);
 
                     // Ensure the admin user exists
                     await initializeAdminUser(userId);
 
-                    // Show login form after all initialization is complete
+                    // Hide initializing message and show login form
+                    initializingMessage.classList.add('hidden');
                     loginForm.classList.remove('hidden');
                     loginButton.disabled = false;
                     setupLoginFormListener();
