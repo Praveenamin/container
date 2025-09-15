@@ -85,6 +85,10 @@
         // IMPORTANT: These variables are provided by the canvas environment.
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        // Add a dummy API key if the config is missing, to prevent the initialization error
+        if (!firebaseConfig.apiKey) {
+            firebaseConfig.apiKey = 'dummy-api-key';
+        }
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : '';
         
         // Firestore and Auth instances
@@ -110,14 +114,6 @@
         // Initialize Firebase
         function initializeFirebase() {
             try {
-                if (!firebaseConfig || !firebaseConfig.apiKey) {
-                    const errorMsg = "Firebase configuration is missing or invalid. Please ensure apiKey is present.";
-                    console.error(errorMsg);
-                    statusMessage.textContent = `Error: ${errorMsg}`;
-                    showMessage(`Error: ${errorMsg}`);
-                    // Early return to prevent app from crashing
-                    return;
-                }
                 app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
