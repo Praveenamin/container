@@ -85,10 +85,6 @@
         // IMPORTANT: These variables are provided by the canvas environment.
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        // Add a dummy API key if the config is missing, to prevent the initialization error
-        if (!firebaseConfig.apiKey) {
-            firebaseConfig.apiKey = 'dummy-api-key';
-        }
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : '';
         
         // Firestore and Auth instances
@@ -114,16 +110,25 @@
         // Initialize Firebase
         function initializeFirebase() {
             try {
+                if (Object.keys(firebaseConfig).length === 0 || !firebaseConfig.apiKey) {
+                    const errorMsg = "Firebase configuration is missing. Please ensure apiKey is present.";
+                    console.error(errorMsg);
+                    statusMessage.textContent = `Error: ${errorMsg}`;
+                    showMessage(`Error: ${errorMsg}`);
+                    return false;
+                }
                 app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
                 // Enable debug logging for Firestore
                 setLogLevel('debug');
                 console.log("Firebase app initialized successfully.");
+                return true;
             } catch (error) {
                 console.error("Error initializing Firebase:", error);
                 statusMessage.textContent = `Error: ${error.message}`;
                 showMessage(`Error: ${error.message}`);
+                return false;
             }
         }
 
@@ -147,7 +152,12 @@
         // Main app initialization
         async function startApp() {
             console.log("Starting app initialization...");
-            initializeFirebase();
+            if (!initializeFirebase()) {
+                console.error("Firebase initialization failed, stopping app.");
+                loadingScreen.classList.remove('hidden');
+                mainContent.classList.add('hidden');
+                return;
+            }
             
             // This listener ensures the UI is displayed only after authentication is confirmed.
             // It's a critical part of the initialization process.
