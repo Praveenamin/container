@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Collaborative Whiteboard</title>
+    <title>Employee Portal Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -16,12 +16,12 @@
             align-items: center;
             min-height: 100vh;
         }
-        .container {
+        .login-card {
             background-color: #ffffff;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             padding: 2.5rem;
-            max-width: 90%;
+            max-width: 400px;
             width: 100%;
             text-align: center;
             transition: all 0.3s ease-in-out;
@@ -38,18 +38,7 @@
             z-index: 1000;
             display: none;
             max-width: 300px;
-        }
-        .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border-left-color: #3b82f6;
-            animation: spin 1s ease infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            text-align: left;
         }
         .hidden {
             display: none !important;
@@ -58,17 +47,32 @@
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
 
-    <!-- Loading screen with spinner -->
-    <div id="loading-screen" class="flex flex-col items-center justify-center p-8">
-        <div class="spinner mb-4"></div>
-        <p id="status-message" class="text-lg text-gray-600 font-semibold">Initializing...</p>
-    </div>
+    <!-- Login Form Container -->
+    <div class="login-card">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800">Employee Login</h1>
+        <form id="login-form" class="space-y-4">
+            <div>
+                <label for="email" class="sr-only">Email</label>
+                <input type="email" id="email" name="email" placeholder="Email" required
+                    class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200" />
+            </div>
+            <div>
+                <label for="password" class="sr-only">Password</label>
+                <input type="password" id="password" name="password" placeholder="Password" required
+                    class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200" />
+            </div>
+            <button type="submit"
+                class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-blue-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                Log In
+            </button>
+        </form>
+        <div id="status-message" class="mt-4 text-center font-semibold"></div>
 
-    <!-- Main content container (hidden until initialized) -->
-    <div id="main-content" class="container hidden">
-        <h1 class="text-3xl font-bold mb-4 text-gray-800">Hello, world!</h1>
-        <p class="text-gray-600 text-lg">Your app is ready. The authentication and database connection are working correctly.</p>
-        <p id="user-info" class="text-sm mt-4 text-gray-500 font-mono"></p>
+        <div id="user-info-display" class="hidden mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h2 class="text-xl font-bold mb-2 text-gray-700">Login Successful!</h2>
+            <p id="user-info-email" class="text-sm text-gray-600"></p>
+            <p id="user-info-role" class="text-sm text-gray-600"></p>
+        </div>
     </div>
 
     <!-- Message Box for Alerts -->
@@ -77,124 +81,69 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginForm = document.getElementById('login-form');
+            const statusMessage = document.getElementById('status-message');
+            const userInfoDisplay = document.getElementById('user-info-display');
+            const userInfoEmail = document.getElementById('user-info-email');
+            const userInfoRole = document.getElementById('user-info-role');
+            const messageBox = document.getElementById('message-box');
+            const messageText = document.getElementById('message-text');
 
-        // IMPORTANT: These variables are provided by the canvas environment.
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : '';
-        
-        // Firestore and Auth instances
-        let app, db, auth;
-
-        // UI elements
-        const loadingScreen = document.getElementById('loading-screen');
-        const mainContent = document.getElementById('main-content');
-        const statusMessage = document.getElementById('status-message');
-        const userInfo = document.getElementById('user-info');
-        const messageBox = document.getElementById('message-box');
-        const messageText = document.getElementById('message-text');
-
-        // Function to show a temporary message
-        function showMessage(message) {
-            messageText.textContent = message;
-            messageBox.style.display = 'block';
-            setTimeout(() => {
-                messageBox.style.display = 'none';
-            }, 3000);
-        }
-        
-        // Initialize Firebase services
-        function initializeFirebase() {
-            try {
-                if (!firebaseConfig || !firebaseConfig.apiKey) {
-                    const errorMsg = "Firebase configuration is missing. Please ensure apiKey is present.";
-                    console.error(errorMsg);
-                    statusMessage.textContent = `Error: ${errorMsg}`;
-                    // Keep the loading screen and status message visible
-                    loadingScreen.classList.remove('hidden');
-                    return false;
-                }
-                app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-                setLogLevel('debug');
-                return true;
-            } catch (error) {
-                console.error("Error initializing Firebase:", error);
-                statusMessage.textContent = `Error: ${error.message}`;
-                return false;
+            // Function to show a temporary message
+            function showMessage(message, type = 'info') {
+                messageText.textContent = message;
+                messageBox.style.display = 'block';
+                // You could add color changes here based on the message type (e.g., success, error)
+                setTimeout(() => {
+                    messageBox.style.display = 'none';
+                }, 3000);
             }
-        }
-        
-        // Ensure the default admin user exists
-        async function initializeAdminUser(userId) {
-            const adminDocRef = doc(db, 'artifacts', 'main-app', 'users', userId, 'data', 'admin');
-            try {
-                const adminDoc = await getDoc(adminDocRef);
-                if (!adminDoc.exists()) {
-                    console.log("Creating default admin user.");
-                    await setDoc(adminDocRef, {
-                        email: 'praveen.b@assistanz.com',
-                        password: 'password123',
-                        role: 'admin'
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+
+                statusMessage.textContent = 'Logging in...';
+                statusMessage.className = 'mt-4 text-center font-semibold text-gray-500';
+
+                try {
+                    const response = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ email, password }),
                     });
-                    console.log("Default admin user created successfully.");
-                } else {
-                    console.log("Admin user already exists.");
-                }
-            } catch (error) {
-                console.error("Error initializing admin user:", error);
-                throw error;
-            }
-        }
 
-        // Main app initialization
-        async function startApp() {
-            if (!initializeFirebase()) {
-                return;
-            }
-            
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    const userId = user.uid;
-                    console.log("User authenticated:", userId);
-                    statusMessage.textContent = "Authenticated successfully!";
-                    
-                    try {
-                        // Show the main content and hide the loading screen
-                        loadingScreen.classList.add('hidden');
-                        mainContent.classList.remove('hidden');
-                        userInfo.textContent = `User ID: ${userId}`;
-                        showMessage("App is ready!");
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        statusMessage.textContent = 'Login successful!';
+                        statusMessage.className = 'mt-4 text-center font-semibold text-green-600';
                         
-                    } catch (error) {
-                        console.error("Initialization failed:", error);
-                        statusMessage.textContent = `Initialization failed: ${error.message}`;
-                        showMessage(`Initialization failed: ${error.message}`);
+                        // Display user info
+                        userInfoEmail.textContent = `Email: ${data.user.email}`;
+                        userInfoRole.textContent = `Role: ${data.user.role}`;
+                        userInfoDisplay.classList.remove('hidden');
+                        loginForm.classList.add('hidden');
+                        
+                        showMessage("Login successful!");
+                    } else {
+                        statusMessage.textContent = data.message || 'Login failed.';
+                        statusMessage.className = 'mt-4 text-center font-semibold text-red-600';
+                        showMessage(data.message || 'Login failed.');
                     }
-                    
-                } else {
-                    console.log("No user signed in. Attempting to authenticate...");
-                    try {
-                        if (initialAuthToken) {
-                            await signInWithCustomToken(auth, initialAuthToken);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
-                    } catch (error) {
-                        console.error("Authentication failed:", error);
-                        statusMessage.textContent = `Authentication failed: ${error.message}`;
-                    }
+                } catch (error) {
+                    console.error('Error during login:', error);
+                    statusMessage.textContent = 'An error occurred. Please try again.';
+                    statusMessage.className = 'mt-4 text-center font-semibold text-red-600';
+                    showMessage('An error occurred. Please try again.');
                 }
             });
-        }
-
-        // Run the initialization sequence
-        startApp();
+        });
     </script>
 </body>
 </html>
