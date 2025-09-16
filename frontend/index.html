@@ -440,12 +440,29 @@
             // Handle User Form Submission
             userForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const formData = new FormData(userForm);
-                const data = Object.fromEntries(formData.entries());
                 
-                // Add asset checkboxes
-                data.keyboard = document.getElementById('keyboard').checked;
-                data.mouse = document.getElementById('mouse').checked;
+                const data = {
+                    firstName: document.getElementById('firstName').value,
+                    lastName: document.getElementById('lastName').value,
+                    email: document.getElementById('email').value,
+                    password: document.getElementById('password').value,
+                    details: {
+                        designation: document.getElementById('designation').value,
+                        phone: document.getElementById('phone').value,
+                        altPhone: document.getElementById('altPhone').value,
+                        address: document.getElementById('address').value,
+                        assets: {
+                            assetType: document.getElementById('assetType').value,
+                            serialNumber: document.getElementById('serialNumber').value,
+                            cpu: document.getElementById('cpu').value,
+                            ram: document.getElementById('ram').value,
+                            networkIp: document.getElementById('networkIp').value,
+                            monitors: document.getElementById('monitors').value,
+                            keyboard: document.getElementById('keyboard').checked,
+                            mouse: document.getElementById('mouse').checked
+                        }
+                    }
+                };
 
                 const method = editingUserEmail ? 'PUT' : 'POST';
                 const url = editingUserEmail ? `/api/users/${editingUserEmail}` : '/api/users';
