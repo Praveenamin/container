@@ -165,8 +165,6 @@
                     statusMessage.textContent = "Authenticated successfully!";
                     
                     try {
-                        await initializeAdminUser(userId);
-
                         // Show the main content and hide the loading screen
                         loadingScreen.classList.add('hidden');
                         mainContent.classList.remove('hidden');
