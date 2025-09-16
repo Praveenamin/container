@@ -84,7 +84,14 @@
 
         // IMPORTANT: These variables are provided by the canvas environment.
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "your-api-key",
+            authDomain: "your-auth-domain",
+            projectId: "your-project-id",
+            storageBucket: "your-storage-bucket",
+            messagingSenderId: "your-messaging-sender-id",
+            appId: "your-app-id"
+        };
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : '';
         
         // Firestore and Auth instances
@@ -132,7 +139,7 @@
         
         // Ensure the default admin user exists
         async function initializeAdminUser(userId) {
-            const adminDocRef = doc(db, 'artifacts', appId, 'users', userId, 'data', 'admin');
+            const adminDocRef = doc(db, 'artifacts', 'main-app', 'users', userId, 'data', 'admin');
             try {
                 const adminDoc = await getDoc(adminDocRef);
                 if (!adminDoc.exists()) {
