@@ -62,6 +62,7 @@ def add_user():
     """Adds a new user to the database."""
     try:
         data = request.json
+        print("Received data for new user:", json.dumps(data, indent=2))
         email = data.get('email')
         
         if email in users_db:
@@ -84,6 +85,8 @@ def add_user():
         users_db[email] = new_user
         return jsonify({"message": "User added successfully", "user": new_user}), 201
 
+    except json.JSONDecodeError:
+        return jsonify({"message": "Invalid JSON in request body"}), 400
     except Exception as e:
         print(f"Error adding user: {e}")
         return jsonify({"message": "An internal server error occurred"}), 500
@@ -93,6 +96,7 @@ def edit_user(email):
     """Updates an existing user's details."""
     try:
         data = request.json
+        print(f"Received data to edit user '{email}':", json.dumps(data, indent=2))
         if email not in users_db:
             return jsonify({"message": "User not found"}), 404
 
@@ -103,6 +107,8 @@ def edit_user(email):
         
         return jsonify({"message": "User updated successfully", "user": user}), 200
         
+    except json.JSONDecodeError:
+        return jsonify({"message": "Invalid JSON in request body"}), 400
     except Exception as e:
         print(f"Error editing user: {e}")
         return jsonify({"message": "An internal server error occurred"}), 500

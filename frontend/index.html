@@ -389,7 +389,7 @@
                     renderUserTable(userList);
                 } catch (error) {
                     console.error("Failed to fetch users:", error);
-                    showMessage("Failed to load users.");
+                    showMessage("Failed to load users. Please check if the backend server is running.");
                 }
             }
 
@@ -488,7 +488,7 @@
                     }
                 } catch (error) {
                     console.error("User form submission error:", error);
-                    showMessage('An error occurred. Please try again.');
+                    showMessage('Network error: Failed to connect to the server. Please ensure the Python backend is running.');
                 }
             });
 
@@ -573,7 +573,7 @@
                     console.error('Error during login:', error);
                     statusMessage.textContent = 'An error occurred. Please try again.';
                     statusMessage.className = 'mt-4 text-center font-semibold text-red-600';
-                    showMessage('An error occurred. Please try again.');
+                    showMessage('Network error: Failed to connect to the server. Please ensure the Python backend is running.');
                 }
             });
 
