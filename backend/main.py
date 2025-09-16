@@ -144,5 +144,5 @@ def get_announcements():
     return jsonify(announcements_db), 200
 
 if __name__ == '__main__':
-    app.run(host='23.82.14.235', port=5005)
+    app.run(host='0.0.0.0', port=5005)
 
