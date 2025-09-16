@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Portal Login</title>
+    <title>Employee Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -15,6 +15,20 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 2.5rem;
+            max-width: 90%;
+            width: 100%;
+            text-align: center;
+            transition: all 0.3s ease-in-out;
+            min-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         .login-card {
             background-color: #ffffff;
@@ -43,12 +57,31 @@
         .hidden {
             display: none !important;
         }
+        .marquee-container {
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            box-sizing: border-box;
+            background-color: #e2e8f0;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        .marquee-content {
+            display: inline-block;
+            padding-left: 100%;
+            animation: marquee 20s linear infinite;
+        }
+        @keyframes marquee {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-100%, 0); }
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
 
     <!-- Login Form Container -->
-    <div class="login-card">
+    <div id="login-view" class="login-card">
         <h1 class="text-3xl font-bold mb-6 text-gray-800">Employee Login</h1>
         <form id="login-form" class="space-y-4">
             <div>
@@ -67,12 +100,160 @@
             </button>
         </form>
         <div id="status-message" class="mt-4 text-center font-semibold"></div>
+    </div>
 
-        <div id="user-info-display" class="hidden mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <h2 class="text-xl font-bold mb-2 text-gray-700">Login Successful!</h2>
-            <p id="user-info-email" class="text-sm text-gray-600"></p>
-            <p id="user-info-role" class="text-sm text-gray-600"></p>
+    <!-- Admin Dashboard View -->
+    <div id="admin-view" class="container hidden">
+        <header class="w-full flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+            <h1 class="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
+            <button id="logout-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">Log Out</button>
+        </header>
+
+        <div id="admin-nav" class="flex space-x-4 mb-8">
+            <button data-view="user-management" class="nav-btn bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors">User Management</button>
+            <button data-view="announcements" class="nav-btn bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors">Announcements</button>
         </div>
+
+        <div id="admin-content" class="w-full text-left">
+            <!-- User Management Section -->
+            <div id="user-management-view" class="content-section">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-semibold">User Management</h2>
+                    <button id="add-user-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">Add User</button>
+                </div>
+
+                <!-- User Table -->
+                <div id="user-list-container" class="overflow-x-auto">
+                    <table class="min-w-full bg-white rounded-lg shadow-md">
+                        <thead>
+                            <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                                <th class="py-3 px-6 text-left">First Name</th>
+                                <th class="py-3 px-6 text-left">Last Name</th>
+                                <th class="py-3 px-6 text-left">Email</th>
+                                <th class="py-3 px-6 text-left">Role</th>
+                                <th class="py-3 px-6 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-table-body" class="text-gray-600 text-sm font-light">
+                            <!-- User rows will be dynamically inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Add/Edit User Form -->
+                <div id="user-form-container" class="hidden mt-8">
+                    <h3 id="form-title" class="text-xl font-bold mb-4">Add New User</h3>
+                    <form id="user-form" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="firstName" class="block text-sm font-medium text-gray-700">First Name</label>
+                                <input type="text" id="firstName" name="firstName" required
+                                    class="w-full mt-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label for="lastName" class="block text-sm font-medium text-gray-700">Last Name</label>
+                                <input type="text" id="lastName" name="lastName" required
+                                    class="w-full mt-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label for="designation" class="block text-sm font-medium text-gray-700">Designation</label>
+                                <input type="text" id="designation" name="designation" required
+                                    class="w-full mt-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                                <input type="email" id="email" name="email" required
+                                    class="w-full mt-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                                <input type="password" id="password" name="password" required
+                                    class="w-full mt-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label for="phone" class="block text-sm font-medium text-gray-700">Phone Number</label>
+                                <input type="tel" id="phone" name="phone"
+                                    class="w-full mt-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label for="altPhone" class="block text-sm font-medium text-gray-700">Alt Phone Number</label>
+                                <input type="tel" id="altPhone" name="altPhone"
+                                    class="w-full mt-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="address" class="block text-sm font-medium text-gray-700">Residential Address</label>
+                                <textarea id="address" name="address" rows="2"
+                                    class="w-full mt-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- IT Assets Section -->
+                        <div class="mt-6 border-t pt-4">
+                            <h4 class="text-lg font-semibold mb-2 cursor-pointer" onclick="document.getElementById('asset-details').classList.toggle('hidden')">
+                                IT Asset Details
+                            </h4>
+                            <div id="asset-details" class="space-y-4">
+                                <div>
+                                    <label for="assetType" class="block text-sm font-medium text-gray-700">Laptop/Desktop</label>
+                                    <input type="text" id="assetType" name="assetType"
+                                        class="w-full mt-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                </div>
+                                <div>
+                                    <label for="serialNumber" class="block text-sm font-medium text-gray-700">Serial Number</label>
+                                    <input type="text" id="serialNumber" name="serialNumber"
+                                        class="w-full mt-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                </div>
+                                <div>
+                                    <label for="cpu" class="block text-sm font-medium text-gray-700">CPU</label>
+                                    <input type="text" id="cpu" name="cpu"
+                                        class="w-full mt-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" id="submit-user-btn"
+                            class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-blue-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                            Submit
+                        </button>
+                        <button type="button" id="cancel-user-form"
+                            class="w-full bg-gray-400 text-gray-800 font-semibold py-3 rounded-lg shadow-md hover:bg-gray-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2">
+                            Cancel
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Announcements Section -->
+            <div id="announcements-view" class="content-section hidden">
+                <h2 class="text-2xl font-semibold mb-4">Publish Announcements</h2>
+                <form id="announcement-form" class="space-y-4">
+                    <div>
+                        <label for="announcement-text" class="block text-sm font-medium text-gray-700">Announcement Message</label>
+                        <textarea id="announcement-text" name="announcement-text" rows="4" required
+                            class="w-full mt-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                    <button type="submit" class="bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-blue-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        Publish Announcement
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Employee View -->
+    <div id="employee-view" class="container hidden">
+        <header class="w-full flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+            <h1 class="text-3xl font-bold text-gray-800">Employee Portal</h1>
+            <button id="logout-btn-employee" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">Log Out</button>
+        </header>
+        <div class="marquee-container">
+            <div id="announcement-marquee" class="marquee-content text-lg font-semibold text-gray-700">
+                <!-- Announcements will be displayed here -->
+                <span class="mr-20">Welcome to the Employee Portal!</span>
+                <span class="mr-20">No new announcements at this time.</span>
+            </div>
+        </div>
+        <p class="text-center text-gray-600">This is a placeholder for your employee content.</p>
     </div>
 
     <!-- Message Box for Alerts -->
@@ -82,13 +263,27 @@
 
     <script type="module">
         document.addEventListener('DOMContentLoaded', () => {
+            const loginView = document.getElementById('login-view');
+            const adminView = document.getElementById('admin-view');
+            const employeeView = document.getElementById('employee-view');
             const loginForm = document.getElementById('login-form');
             const statusMessage = document.getElementById('status-message');
-            const userInfoDisplay = document.getElementById('user-info-display');
-            const userInfoEmail = document.getElementById('user-info-email');
-            const userInfoRole = document.getElementById('user-info-role');
             const messageBox = document.getElementById('message-box');
             const messageText = document.getElementById('message-text');
+            const logoutBtns = document.querySelectorAll('#logout-btn, #logout-btn-employee');
+            const navButtons = document.querySelectorAll('#admin-nav .nav-btn');
+            const contentSections = document.querySelectorAll('.content-section');
+            const addUserBtn = document.getElementById('add-user-btn');
+            const userFormContainer = document.getElementById('user-form-container');
+            const userListContainer = document.getElementById('user-list-container');
+            const formTitle = document.getElementById('form-title');
+            const userTableBody = document.getElementById('user-table-body');
+            const userForm = document.getElementById('user-form');
+            const announcementForm = document.getElementById('announcement-form');
+            const announcementMarquee = document.getElementById('announcement-marquee');
+
+            let currentView = 'user-management-view';
+            let users = [];
 
             // Function to show a temporary message
             function showMessage(message, type = 'info') {
@@ -99,6 +294,94 @@
                     messageBox.style.display = 'none';
                 }, 3000);
             }
+
+            // Function to fetch announcements
+            async function fetchAnnouncements() {
+                // Placeholder fetch, announcements will be static for now
+                const announcements = [
+                    "Welcome to the new employee portal!",
+                    "Happy work anniversary to our team members!",
+                    "The annual company picnic is next week. Details to follow!"
+                ];
+                announcementMarquee.innerHTML = announcements.map(msg => `<span class="mr-20">${msg}</span>`).join('');
+            }
+            fetchAnnouncements();
+
+            // Function to switch between admin content sections
+            function switchAdminView(viewId) {
+                contentSections.forEach(section => {
+                    if (section.id === viewId) {
+                        section.classList.remove('hidden');
+                    } else {
+                        section.classList.add('hidden');
+                    }
+                });
+                currentView = viewId;
+                if (viewId === 'user-management-view') {
+                    userFormContainer.classList.add('hidden');
+                    userListContainer.classList.remove('hidden');
+                }
+            }
+            
+            navButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    switchAdminView(btn.dataset.view + '-view');
+                });
+            });
+
+            // Function to render the user table
+            function renderUserTable(userList) {
+                userTableBody.innerHTML = '';
+                userList.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.classList.add('border-b', 'border-gray-200', 'hover:bg-gray-100');
+                    row.innerHTML = `
+                        <td class="py-3 px-6 text-left whitespace-nowrap">${user.firstName || 'N/A'}</td>
+                        <td class="py-3 px-6 text-left">${user.lastName || 'N/A'}</td>
+                        <td class="py-3 px-6 text-left">${user.email}</td>
+                        <td class="py-3 px-6 text-left">${user.role}</td>
+                        <td class="py-3 px-6 text-center">
+                            <button class="edit-btn text-blue-500 hover:text-blue-700 font-semibold px-2 py-1 rounded-lg">Edit</button>
+                            <button class="lock-btn text-yellow-500 hover:text-yellow-700 font-semibold px-2 py-1 rounded-lg">Lock</button>
+                            <button class="delete-btn text-red-500 hover:text-red-700 font-semibold px-2 py-1 rounded-lg">Delete</button>
+                        </td>
+                    `;
+                    userTableBody.appendChild(row);
+                });
+            }
+
+            // Dummy data for initial display
+            const dummyUsers = [
+                { firstName: 'John', lastName: 'Doe', email: 'john.doe@example.com', role: 'employee' },
+                { firstName: 'Jane', lastName: 'Smith', email: 'jane.smith@example.com', role: 'admin' },
+            ];
+            renderUserTable(dummyUsers);
+
+            // Admin button listeners
+            addUserBtn.addEventListener('click', () => {
+                formTitle.textContent = 'Add New User';
+                userForm.reset();
+                userFormContainer.classList.remove('hidden');
+                userListContainer.classList.add('hidden');
+            });
+            document.getElementById('cancel-user-form').addEventListener('click', () => {
+                userFormContainer.classList.add('hidden');
+                userListContainer.classList.remove('hidden');
+            });
+
+            // Handle Announcements Form Submission
+            announcementForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const announcementText = document.getElementById('announcement-text').value;
+                if (announcementText.trim() === '') {
+                    showMessage("Announcement message cannot be empty.");
+                    return;
+                }
+                // Here you would send the announcement to the backend
+                showMessage("Announcement published successfully! (Placeholder)");
+                announcementForm.reset();
+            });
+
 
             loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -124,13 +407,16 @@
                         statusMessage.textContent = 'Login successful!';
                         statusMessage.className = 'mt-4 text-center font-semibold text-green-600';
                         
-                        // Display user info
-                        userInfoEmail.textContent = `Email: ${data.user.email}`;
-                        userInfoRole.textContent = `Role: ${data.user.role}`;
-                        userInfoDisplay.classList.remove('hidden');
-                        loginForm.classList.add('hidden');
-                        
-                        showMessage("Login successful!");
+                        const userRole = data.user.role;
+                        loginView.classList.add('hidden');
+
+                        if (userRole === 'admin') {
+                            adminView.classList.remove('hidden');
+                            showMessage(`Welcome, Admin!`);
+                        } else {
+                            employeeView.classList.remove('hidden');
+                            showMessage(`Welcome, Employee!`);
+                        }
                     } else {
                         statusMessage.textContent = data.message || 'Login failed.';
                         statusMessage.className = 'mt-4 text-center font-semibold text-red-600';
@@ -143,6 +429,25 @@
                     showMessage('An error occurred. Please try again.');
                 }
             });
+
+            logoutBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    adminView.classList.add('hidden');
+                    employeeView.classList.add('hidden');
+                    loginView.classList.remove('hidden');
+                    showMessage("Logged out successfully.");
+                });
+            });
+
+            // Placeholder function for fetching users
+            async function fetchUsers() {
+                showMessage("Fetching users... (Placeholder)");
+                // In a real app, this would be an API call
+                renderUserTable(dummyUsers);
+            }
+            
+            // Initial render
+            fetchUsers();
         });
     </script>
 </body>
