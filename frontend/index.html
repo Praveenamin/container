@@ -288,6 +288,8 @@
 
     <script type="module">
         document.addEventListener('DOMContentLoaded', () => {
+            const BASE_URL = 'http://23.82.14.235:5005';
+
             const loginView = document.getElementById('login-view');
             const adminView = document.getElementById('admin-view');
             const employeeView = document.getElementById('employee-view');
@@ -324,7 +326,7 @@
             // Function to fetch announcements
             async function fetchAnnouncements() {
                 try {
-                    const response = await fetch('/api/announcements');
+                    const response = await fetch(`${BASE_URL}/api/announcements`);
                     const announcements = await response.json();
                     if (announcements.length > 0) {
                         announcementMarquee.innerHTML = announcements.map(msg => `<span class="mr-20">${msg}</span>`).join('');
@@ -364,6 +366,8 @@
             function renderUserTable(userList) {
                 userTableBody.innerHTML = '';
                 userList.forEach(user => {
+                    const lockButtonText = user.locked ? 'Unlock' : 'Lock';
+                    const lockButtonColor = user.locked ? 'text-green-500' : 'text-yellow-500';
                     const row = document.createElement('tr');
                     row.classList.add('border-b', 'border-gray-200', 'hover:bg-gray-100');
                     row.innerHTML = `
@@ -371,9 +375,9 @@
                         <td class="py-3 px-6 text-left">${user.lastName || 'N/A'}</td>
                         <td class="py-3 px-6 text-left">${user.email}</td>
                         <td class="py-3 px-6 text-left">${user.role}</td>
-                        <td class="py-3 px-6 text-center">
+                        <td class="py-3 px-6 text-center whitespace-nowrap">
                             <button data-email="${user.email}" class="edit-btn text-blue-500 hover:text-blue-700 font-semibold px-2 py-1 rounded-lg">Edit</button>
-                            <button data-email="${user.email}" class="lock-btn text-yellow-500 hover:text-yellow-700 font-semibold px-2 py-1 rounded-lg">Lock</button>
+                            <button data-email="${user.email}" class="lock-btn ${lockButtonColor} hover:text-yellow-700 font-semibold px-2 py-1 rounded-lg">${lockButtonText}</button>
                             <button data-email="${user.email}" class="delete-btn text-red-500 hover:text-red-700 font-semibold px-2 py-1 rounded-lg">Delete</button>
                         </td>
                     `;
@@ -384,7 +388,7 @@
             // Function to fetch users from the backend
             async function fetchUsers() {
                 try {
-                    const response = await fetch('/api/users');
+                    const response = await fetch(`${BASE_URL}/api/users`);
                     const userList = await response.json();
                     renderUserTable(userList);
                 } catch (error) {
@@ -418,7 +422,7 @@
                     return;
                 }
                 try {
-                    const response = await fetch('/api/announcements', {
+                    const response = await fetch(`${BASE_URL}/api/announcements`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({ message: announcementText })
@@ -442,154 +446,5 @@
                 e.preventDefault();
                 
                 const data = {
-                    firstName: document.getElementById('firstName').value,
-                    lastName: document.getElementById('lastName').value,
-                    email: document.getElementById('email').value,
-                    password: document.getElementById('password').value,
-                    details: {
-                        designation: document.getElementById('designation').value,
-                        phone: document.getElementById('phone').value,
-                        altPhone: document.getElementById('altPhone').value,
-                        address: document.getElementById('address').value,
-                        assets: {
-                            assetType: document.getElementById('assetType').value,
-                            serialNumber: document.getElementById('serialNumber').value,
-                            cpu: document.getElementById('cpu').value,
-                            ram: document.getElementById('ram').value,
-                            networkIp: document.getElementById('networkIp').value,
-                            monitors: document.getElementById('monitors').value,
-                            keyboard: document.getElementById('keyboard').checked,
-                            mouse: document.getElementById('mouse').checked
-                        }
-                    }
-                };
-
-                const method = editingUserEmail ? 'PUT' : 'POST';
-                const url = editingUserEmail ? `/api/users/${editingUserEmail}` : '/api/users';
-                
-                try {
-                    const response = await fetch(url, {
-                        method: method,
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(data),
-                    });
-
-                    const result = await response.json();
-
-                    if (response.ok) {
-                        showMessage(result.message);
-                        userFormContainer.classList.add('hidden');
-                        userListContainer.classList.remove('hidden');
-                        fetchUsers(); // Refresh the user list
-                    } else {
-                        showMessage(result.message || 'Action failed.');
-                    }
-                } catch (error) {
-                    console.error("User form submission error:", error);
-                    showMessage('Network error: Failed to connect to the server. Please ensure the Python backend is running.');
-                }
-            });
-
-            // Event listener for the Edit button on the table
-            userTableBody.addEventListener('click', async (e) => {
-                if (e.target.classList.contains('edit-btn')) {
-                    const email = e.target.dataset.email;
-                    const response = await fetch('/api/users');
-                    const users = await response.json();
-                    const userToEdit = users.find(u => u.email === email);
-
-                    if (userToEdit) {
-                        formTitle.textContent = 'Edit User';
-                        editingUserEmail = email;
-                        
-                        document.getElementById('firstName').value = userToEdit.firstName;
-                        document.getElementById('lastName').value = userToEdit.lastName;
-                        document.getElementById('email').value = userToEdit.email;
-                        document.getElementById('email').readOnly = true; // Prevent editing the email
-                        document.getElementById('password').value = userToEdit.password; // Note: In a real app, passwords shouldn't be sent back
-                        document.getElementById('password').required = false;
-                        document.getElementById('designation').value = userToEdit.details.designation;
-                        document.getElementById('phone').value = userToEdit.details.phone;
-                        document.getElementById('altPhone').value = userToEdit.details.altPhone;
-                        document.getElementById('address').value = userToEdit.details.address;
-                        
-                        const assets = userToEdit.details.assets;
-                        document.getElementById('assetType').value = assets.assetType;
-                        document.getElementById('serialNumber').value = assets.serialNumber;
-                        document.getElementById('cpu').value = assets.cpu;
-                        document.getElementById('ram').value = assets.ram;
-                        document.getElementById('networkIp').value = assets.networkIp;
-                        document.getElementById('monitors').value = assets.monitors;
-                        document.getElementById('keyboard').checked = assets.keyboard;
-                        document.getElementById('mouse').checked = assets.mouse;
-
-                        userFormContainer.classList.remove('hidden');
-                        userListContainer.classList.add('hidden');
-                    }
-                }
-            });
-
-            // Handle login form submission
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('email').value;
-                const password = document.getElementById('password').value;
-                statusMessage.textContent = 'Logging in...';
-                statusMessage.className = 'mt-4 text-center font-semibold text-gray-500';
-
-                try {
-                    const response = await fetch('/api/login', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ email, password }),
-                    });
-
-                    const data = await response.json();
-
-                    if (response.ok) {
-                        statusMessage.textContent = 'Login successful!';
-                        statusMessage.className = 'mt-4 text-center font-semibold text-green-600';
-                        
-                        const userRole = data.user.role;
-                        loginView.classList.add('hidden');
-
-                        if (userRole === 'admin') {
-                            adminView.classList.remove('hidden');
-                            showMessage(`Welcome, Admin!`);
-                        } else {
-                            employeeView.classList.remove('hidden');
-                            showMessage(`Welcome, Employee!`);
-                        }
-                    } else {
-                        statusMessage.textContent = data.message || 'Login failed.';
-                        statusMessage.className = 'mt-4 text-center font-semibold text-red-600';
-                        showMessage(data.message || 'Login failed.');
-                    }
-                } catch (error) {
-                    console.error('Error during login:', error);
-                    statusMessage.textContent = 'An error occurred. Please try again.';
-                    statusMessage.className = 'mt-4 text-center font-semibold text-red-600';
-                    showMessage('Network error: Failed to connect to the server. Please ensure the Python backend is running.');
-                }
-            });
-
-            logoutBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    adminView.classList.add('hidden');
-                    employeeView.classList.add('hidden');
-                    loginView.classList.remove('hidden');
-                    showMessage("Logged out successfully.");
-                });
-            });
-
-            // Initial render
-            fetchUsers();
-        });
-    </script>
-</body>
-</html>
+                    firstName:
 

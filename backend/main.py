@@ -113,6 +113,25 @@ def edit_user(email):
         print(f"Error editing user: {e}")
         return jsonify({"message": "An internal server error occurred"}), 500
 
+@app.route('/api/users/<email>', methods=['DELETE'])
+def delete_user(email):
+    """Deletes a user from the database."""
+    if email in users_db:
+        del users_db[email]
+        return jsonify({"message": f"User '{email}' deleted successfully"}), 200
+    return jsonify({"message": "User not found"}), 404
+
+@app.route('/api/users/<email>/lock', methods=['PUT'])
+def toggle_lock(email):
+    """Toggles the locked status of a user."""
+    user = users_db.get(email)
+    if user:
+        user['locked'] = not user['locked']
+        status = "locked" if user['locked'] else "unlocked"
+        return jsonify({"message": f"User '{email}' {status} successfully"}), 200
+    return jsonify({"message": "User not found"}), 404
+
+
 # Placeholder for future announcement routes
 @app.route('/api/announcements', methods=['POST'])
 def add_announcement():
@@ -125,5 +144,5 @@ def get_announcements():
     return jsonify(announcements_db), 200
 
 if __name__ == '__main__':
-    app.run(port=5000)
+    app.run(host='23.82.14.235', port=5005)
 
