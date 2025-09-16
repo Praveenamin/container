@@ -309,6 +309,7 @@
 
             let currentView = 'user-management-view';
             let users = [];
+            let editingUserEmail = null;
 
             // Function to show a temporary message
             function showMessage(message, type = 'info') {
@@ -322,13 +323,17 @@
 
             // Function to fetch announcements
             async function fetchAnnouncements() {
-                // Placeholder fetch, announcements will be static for now
-                const announcements = [
-                    "Welcome to the new employee portal!",
-                    "Happy work anniversary to our team members!",
-                    "The annual company picnic is next week. Details to follow!"
-                ];
-                announcementMarquee.innerHTML = announcements.map(msg => `<span class="mr-20">${msg}</span>`).join('');
+                try {
+                    const response = await fetch('/api/announcements');
+                    const announcements = await response.json();
+                    if (announcements.length > 0) {
+                        announcementMarquee.innerHTML = announcements.map(msg => `<span class="mr-20">${msg}</span>`).join('');
+                    } else {
+                        announcementMarquee.innerHTML = `<span class="mr-20">No new announcements at this time.</span>`;
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch announcements:", error);
+                }
             }
             fetchAnnouncements();
 
@@ -345,6 +350,7 @@
                 if (viewId === 'user-management-view') {
                     userFormContainer.classList.add('hidden');
                     userListContainer.classList.remove('hidden');
+                    fetchUsers(); // Refresh the user list
                 }
             }
             
@@ -366,29 +372,38 @@
                         <td class="py-3 px-6 text-left">${user.email}</td>
                         <td class="py-3 px-6 text-left">${user.role}</td>
                         <td class="py-3 px-6 text-center">
-                            <button class="edit-btn text-blue-500 hover:text-blue-700 font-semibold px-2 py-1 rounded-lg">Edit</button>
-                            <button class="lock-btn text-yellow-500 hover:text-yellow-700 font-semibold px-2 py-1 rounded-lg">Lock</button>
-                            <button class="delete-btn text-red-500 hover:text-red-700 font-semibold px-2 py-1 rounded-lg">Delete</button>
+                            <button data-email="${user.email}" class="edit-btn text-blue-500 hover:text-blue-700 font-semibold px-2 py-1 rounded-lg">Edit</button>
+                            <button data-email="${user.email}" class="lock-btn text-yellow-500 hover:text-yellow-700 font-semibold px-2 py-1 rounded-lg">Lock</button>
+                            <button data-email="${user.email}" class="delete-btn text-red-500 hover:text-red-700 font-semibold px-2 py-1 rounded-lg">Delete</button>
                         </td>
                     `;
                     userTableBody.appendChild(row);
                 });
             }
 
-            // Dummy data for initial display
-            const dummyUsers = [
-                { firstName: 'John', lastName: 'Doe', email: 'john.doe@example.com', role: 'employee' },
-                { firstName: 'Jane', lastName: 'Smith', email: 'jane.smith@example.com', role: 'admin' },
-            ];
-            renderUserTable(dummyUsers);
+            // Function to fetch users from the backend
+            async function fetchUsers() {
+                try {
+                    const response = await fetch('/api/users');
+                    const userList = await response.json();
+                    renderUserTable(userList);
+                } catch (error) {
+                    console.error("Failed to fetch users:", error);
+                    showMessage("Failed to load users.");
+                }
+            }
 
             // Admin button listeners
             addUserBtn.addEventListener('click', () => {
                 formTitle.textContent = 'Add New User';
                 userForm.reset();
+                editingUserEmail = null;
                 userFormContainer.classList.remove('hidden');
                 userListContainer.classList.add('hidden');
+                document.getElementById('email').readOnly = false;
+                document.getElementById('password').required = true;
             });
+
             document.getElementById('cancel-user-form').addEventListener('click', () => {
                 userFormContainer.classList.add('hidden');
                 userListContainer.classList.remove('hidden');
@@ -402,18 +417,108 @@
                     showMessage("Announcement message cannot be empty.");
                     return;
                 }
-                // Here you would send the announcement to the backend
-                showMessage("Announcement published successfully! (Placeholder)");
-                announcementForm.reset();
+                try {
+                    const response = await fetch('/api/announcements', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ message: announcementText })
+                    });
+                    const result = await response.json();
+                    if (response.ok) {
+                        showMessage(result.message);
+                        announcementForm.reset();
+                        fetchAnnouncements();
+                    } else {
+                        showMessage(result.message || 'Failed to publish announcement.');
+                    }
+                } catch (error) {
+                    console.error("Failed to publish announcement:", error);
+                    showMessage("An error occurred while publishing the announcement.");
+                }
             });
 
+            // Handle User Form Submission
+            userForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(userForm);
+                const data = Object.fromEntries(formData.entries());
+                
+                // Add asset checkboxes
+                data.keyboard = document.getElementById('keyboard').checked;
+                data.mouse = document.getElementById('mouse').checked;
 
+                const method = editingUserEmail ? 'PUT' : 'POST';
+                const url = editingUserEmail ? `/api/users/${editingUserEmail}` : '/api/users';
+                
+                try {
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data),
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        showMessage(result.message);
+                        userFormContainer.classList.add('hidden');
+                        userListContainer.classList.remove('hidden');
+                        fetchUsers(); // Refresh the user list
+                    } else {
+                        showMessage(result.message || 'Action failed.');
+                    }
+                } catch (error) {
+                    console.error("User form submission error:", error);
+                    showMessage('An error occurred. Please try again.');
+                }
+            });
+
+            // Event listener for the Edit button on the table
+            userTableBody.addEventListener('click', async (e) => {
+                if (e.target.classList.contains('edit-btn')) {
+                    const email = e.target.dataset.email;
+                    const response = await fetch('/api/users');
+                    const users = await response.json();
+                    const userToEdit = users.find(u => u.email === email);
+
+                    if (userToEdit) {
+                        formTitle.textContent = 'Edit User';
+                        editingUserEmail = email;
+                        
+                        document.getElementById('firstName').value = userToEdit.firstName;
+                        document.getElementById('lastName').value = userToEdit.lastName;
+                        document.getElementById('email').value = userToEdit.email;
+                        document.getElementById('email').readOnly = true; // Prevent editing the email
+                        document.getElementById('password').value = userToEdit.password; // Note: In a real app, passwords shouldn't be sent back
+                        document.getElementById('password').required = false;
+                        document.getElementById('designation').value = userToEdit.details.designation;
+                        document.getElementById('phone').value = userToEdit.details.phone;
+                        document.getElementById('altPhone').value = userToEdit.details.altPhone;
+                        document.getElementById('address').value = userToEdit.details.address;
+                        
+                        const assets = userToEdit.details.assets;
+                        document.getElementById('assetType').value = assets.assetType;
+                        document.getElementById('serialNumber').value = assets.serialNumber;
+                        document.getElementById('cpu').value = assets.cpu;
+                        document.getElementById('ram').value = assets.ram;
+                        document.getElementById('networkIp').value = assets.networkIp;
+                        document.getElementById('monitors').value = assets.monitors;
+                        document.getElementById('keyboard').checked = assets.keyboard;
+                        document.getElementById('mouse').checked = assets.mouse;
+
+                        userFormContainer.classList.remove('hidden');
+                        userListContainer.classList.add('hidden');
+                    }
+                }
+            });
+
+            // Handle login form submission
             loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-
                 const email = document.getElementById('email').value;
                 const password = document.getElementById('password').value;
-
                 statusMessage.textContent = 'Logging in...';
                 statusMessage.className = 'mt-4 text-center font-semibold text-gray-500';
 
@@ -464,13 +569,6 @@
                 });
             });
 
-            // Placeholder function for fetching users
-            async function fetchUsers() {
-                showMessage("Fetching users... (Placeholder)");
-                // In a real app, this would be an API call
-                renderUserTable(dummyUsers);
-            }
-            
             // Initial render
             fetchUsers();
         });
